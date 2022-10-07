@@ -75,7 +75,6 @@ void CMdbToXlDlg::CloseDBConn(CDatabase* pDB = NULL, BOOL bDBConn = FALSE)
 			delete m_pRecordset;
 			pDB->Close();
 		}
-		
 		m_ctrlExcelList.DeleteAllItems();
 		m_ctrlFieldList.DeleteAllItems();
 		SetDlgItemText(IDC_UPDATE_NAME, _T(""));
@@ -473,6 +472,7 @@ void CMdbToXlDlg::OnBnClickedbtninput()
 
 		////////////////////////////////////////////////////////////
 		//테이블이 SV_DVVAL일 때
+		
 		/*if (m_strTable == _T("SV_DVVAL"))
 		{
 			m_ctrlFieldList.SetCheck(2);
@@ -550,6 +550,30 @@ void CMdbToXlDlg::OnCbnSelchangeTable()
 		AfxMessageBox(_T("해당 테이블이 존재하지 않습니다."));
 	}
 	END_CATCH;
+
+	if (m_strTable == _T("SV_DVVAL"))
+	{
+		m_ctrlFieldList.SetCheck(2);
+		m_ctrlFieldList.SetCheck(3);
+		m_ctrlFieldList.SetCheck(7);
+		m_ctrlFieldList.SetCheck(4);
+		m_ctrlFieldList.SetCheck(5);
+
+		m_ctrlExcelList.SetItemText(0, 0, _T("SVID"));
+		m_VstExcelValue.at(0).strExcelName = _T("SVID");
+
+		m_ctrlExcelList.SetItemText(1, 0, _T("VID NAME"));
+		m_VstExcelValue.at(1).strExcelName = _T("VID NAME");
+
+		m_ctrlExcelList.SetItemText(2, 0, _T("VID Description"));
+		m_VstExcelValue.at(2).strExcelName = _T("VID Description");
+
+		m_ctrlExcelList.SetItemText(3, 0, _T("FORMAT"));
+		m_VstExcelValue.at(3).strExcelName = _T("FORMAT");
+
+		m_ctrlExcelList.SetItemText(4, 0, _T("Type Size"));
+		m_VstExcelValue.at(4).strExcelName = _T("Type Size");
+	}
 
 	m_bConn = TRUE;
 	SetDlgItemText(IDC_PASSWORD, _T(""));
