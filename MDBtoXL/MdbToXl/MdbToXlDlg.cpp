@@ -75,6 +75,7 @@ void CMdbToXlDlg::CloseDBConn(CDatabase* pDB = NULL, BOOL bDBConn = FALSE)
 			delete m_pRecordset;
 			pDB->Close();
 		}
+		
 		m_ctrlExcelList.DeleteAllItems();
 		m_ctrlFieldList.DeleteAllItems();
 		SetDlgItemText(IDC_UPDATE_NAME, _T(""));
@@ -501,6 +502,7 @@ void CMdbToXlDlg::OnBnClickedbtninput()
 		GetDlgItem(btnInput)->EnableWindow(FALSE);
 		GetDlgItem(btnAllSelect)->EnableWindow(TRUE);
 		SetDlgItemText(IDC_PASSWORD, _T(""));
+		GetDlgItem(IDC_PASSWORD)->EnableWindow(FALSE);
 	}
 	CATCH(CDBException, e)
 	{
