@@ -89,7 +89,7 @@ public:
 	CString m_strPW;
 		
 	void CloseDBConn(CDatabase* pDB,BOOL bDBConn);
-
+	void CallDBTable();
 
 	//-----------------------------------
 	// 엑셀 관련

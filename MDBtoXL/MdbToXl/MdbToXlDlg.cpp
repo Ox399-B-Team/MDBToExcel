@@ -86,6 +86,37 @@ void CMdbToXlDlg::CloseDBConn(CDatabase* pDB = NULL, BOOL bDBConn = FALSE)
 	}
 }
 
+void CMdbToXlDlg::CallDBTable()
+{
+	HSTMT hStmt;
+	SQLLEN lLen;
+	CString strUnicode;
+
+	char pcName[256];
+	int nIdx = 0;
+
+	SQLAllocStmt(m_DB.m_hdbc, &hStmt);
+	if (SQLTables(hStmt, NULL, 0, NULL, 0, NULL, 0, _T("TABLE"), SQL_NTS) != SQL_ERROR)
+	{ /* OK */
+		if (SQLFetch(hStmt) != SQL_NO_DATA_FOUND)
+		{ /* Data found */
+			while (!SQLGetData(hStmt, 3, SQL_C_CHAR, pcName, 256, &lLen))
+			{ /* We have a name */
+				if (pcName[0] != '~')
+				{
+					// Do something with the name here
+					strUnicode = pcName; // Char to CString
+					m_ctrlTable.InsertString(nIdx, strUnicode);
+					nIdx++;
+				}
+				SQLFetch(hStmt);
+			}
+		}
+	}
+	SQLFreeStmt(hStmt, SQL_CLOSE);
+	m_ctrlTable.SetCurSel(0);
+}
+
 CMdbToXlDlg::~CMdbToXlDlg()
 {
 	// 이 대화 상자에 대한 자동화 프록시가 있을 경우 이 대화 상자에 대한
@@ -94,7 +125,7 @@ CMdbToXlDlg::~CMdbToXlDlg()
 	if (m_pAutoProxy != nullptr)
 		m_pAutoProxy->m_pDialog = nullptr;
 
-	CloseDBConn();
+	CloseDBConn(&m_DB, m_bConn);
 }
 
 void CMdbToXlDlg::DoDataExchange(CDataExchange* pDX)
@@ -299,7 +330,7 @@ void CMdbToXlDlg::OnBnClickedbtnfileload()
 
 		m_ctrlTable.ResetContent();
 
-		CloseDBConn();
+		CloseDBConn(&m_DB, m_bConn);
 
 		m_nXlRowNum = 0;
 
@@ -319,7 +350,8 @@ void CMdbToXlDlg::OnBnClickedbtnfileload()
 			m_DB.OpenEx(strtemp, CDatabase::noOdbcDialog);
 
 			// 데이터 테이블 목록 불러오기
-			
+			CallDBTable();
+
 			// TABLE에 포함된 FIELD값들을 가져와 표시하는 부분
 			CODBCFieldInfo fieldInfo;
 			CString strQuery;
@@ -382,7 +414,7 @@ void CMdbToXlDlg::OnBnClickedbtninput()
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	m_ctrlTable.ResetContent();
 
-	CloseDBConn();
+	CloseDBConn(&m_DB, m_bConn);
 
 	m_nXlRowNum = 0;
 
@@ -403,6 +435,9 @@ void CMdbToXlDlg::OnBnClickedbtninput()
 
 		m_DB.OpenEx(strtemp, CDatabase::noOdbcDialog);
 		
+		//테이블 이름 불러오기
+		CallDBTable();
+
 		// TABLE에 포함된 FIELD값들을 가져와 표시하는 부분
 		CODBCFieldInfo fieldInfo;
 		CString strQuery;
@@ -478,7 +513,7 @@ void CMdbToXlDlg::OnBnClickedbtninput()
 void CMdbToXlDlg::OnCbnSelchangeTable()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	CloseDBConn();
+	CloseDBConn(&m_DB);
 
 	UpdateData(1);// 컨트롤 >> 변수 //테이블 변경 시 필드 목록 재설정
 
