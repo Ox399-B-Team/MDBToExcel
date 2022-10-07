@@ -55,11 +55,10 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
-
+	afx_msg void OnCbnSelchangeTable();
 	afx_msg void OnLvnItemchangedFieldlist(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnBnClickedbtnfileload();
 	afx_msg void OnBnClickedbtninput();
-	afx_msg void OnCbnSelchangeTable();
 	afx_msg void OnBnClickedbtnsave();
 	afx_msg void OnBnClickedbtnupdate();
 	afx_msg void OnNMClickExcellist(NMHDR* pNMHDR, LRESULT* pResult);
@@ -69,35 +68,36 @@ public:
 
 	//--------------------------------------
 	// 에러 관련
-	//	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	virtual void OnOK();
-	virtual void OnCancel();
+
+
 	//-----------------------------------
 	// MDB 관련
 	CDatabase m_DB;
 	CRecordset* m_pRecordset;
+
 	BOOL m_bConn;
+
 	vector<FieldINFO> m_VstTrueFieldValue;	//실제 데이터 원본
 	vector<FieldINFO> m_VstExcelValue;		//Excellist 데이터 //실제 excel에 나올 데이터
 	FieldINFO m_stFieldInfo;				//이름과 번호 구조체
+
 	CString m_strPathName;
 	CString m_strFileName;
+
 	CString m_strTable;
 	CString m_strPW;
 
-	//-----------------------------------
-	// 엑셀 관련
-	//CFileDialog* m_pExcelDlg ;		// excel 다이얼로그 포인터 변수
-	//bool m_bExcelThreadWorking;
-	CString m_strExcelPathName;
-	HANDLE m_hExcelThread;
-	//HANDLE m_hSaveCancleEvent;		//강사 확인 후 열 것!!
+	void CloseDBConn(CDatabase* pDB, BOOL bDBConn);
+	void CallDBTable();
 
 	//-----------------------------------
+	// 엑셀 관련
+	CFileDialog* m_pExcelDlg;		// excel 다이얼로그 포인터 변수
+	//-----------------------------------
 	// GUI 관련
-	int m_nXlRowNum;					// excel 행 증가	
-	int m_nidx;								// 마우스 포커스 유지 변수
+	int m_nXlRowNum;				// excel 행 증가	
+	int m_nidx;						// 마우스 포커스 유지 변수
 
 	CString strClip(CString str);
 	CString m_strEdit;
@@ -109,6 +109,6 @@ public:
 	//--------------------------------------
 	// 로고 관련
 	CPictureEx m_ctrlROGO;
-
+	virtual void OnOK();
+	virtual void OnCancel();
 };
-
