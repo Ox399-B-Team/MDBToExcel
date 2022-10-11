@@ -67,25 +67,26 @@ CMdbToXlDlg::CMdbToXlDlg(CWnd* pParent /*=nullptr*/)
 	m_pExcelServer = NULL;
 }
 
-void CMdbToXlDlg::CloseDBConn(CDatabase* pDB = NULL, BOOL bDBConn = FALSE)
+void CMdbToXlDlg::CloseDBConn(BOOL bToDisconn = FALSE, BOOL bToClose = FALSE)
 {
 	if (m_bConn)
 	{
 		m_pRecordset->Close();
-		if (bDBConn)
+		if (bToDisconn)
 		{
 			delete m_pRecordset;
-			pDB->Close();
+			m_DB.Close();
 		}
+		if (!bToClose)
+		{
+			m_ctrlExcelList.DeleteAllItems();
+			m_ctrlFieldList.DeleteAllItems();
+			SetDlgItemText(IDC_UPDATE_NAME, _T(""));
 
-		m_VstExcelValue.clear();
-		m_VstTrueFieldValue.clear();
-
+			m_VstExcelValue.clear();
+			m_VstTrueFieldValue.clear();
+		}
 		m_bConn = FALSE;
-
-		m_ctrlExcelList.DeleteAllItems();
-		m_ctrlFieldList.DeleteAllItems();
-		SetDlgItemText(IDC_UPDATE_NAME, _T(""));
 	}
 }
 
@@ -129,13 +130,7 @@ CMdbToXlDlg::~CMdbToXlDlg()
 	if (m_pAutoProxy != nullptr)
 		m_pAutoProxy->m_pDialog = nullptr;
 
-	//CloseDBConn(&m_DB, m_bConn);
-	if (m_bConn)
-	{
-		m_pRecordset->Close();
-		delete m_pRecordset;
-		m_DB.Close();
-	}
+	CloseDBConn(m_bConn,TRUE);
 	
 	//스레드 동작 중일 시 강제 종료
 	if (m_hExcelThread != NULL)
@@ -349,7 +344,7 @@ void CMdbToXlDlg::OnBnClickedbtnfileload()
 
 		m_ctrlTable.ResetContent();
 
-		CloseDBConn(&m_DB, m_bConn);
+		CloseDBConn(m_bConn);
 
 		m_nXlRowNum = 0;
 
@@ -433,7 +428,7 @@ void CMdbToXlDlg::OnBnClickedbtninput()
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	m_ctrlTable.ResetContent();
 
-	CloseDBConn(&m_DB, m_bConn);
+	CloseDBConn(m_bConn);
 
 	m_nXlRowNum = 0;
 
@@ -533,7 +528,7 @@ void CMdbToXlDlg::OnBnClickedbtninput()
 void CMdbToXlDlg::OnCbnSelchangeTable()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	CloseDBConn(&m_DB);
+	CloseDBConn();
 
 	UpdateData(1);// 컨트롤 >> 변수 //테이블 변경 시 필드 목록 재설정
 

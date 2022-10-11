@@ -88,7 +88,7 @@ public:
 	CString m_strTable;
 	CString m_strPW;
 
-	void CloseDBConn(CDatabase* pDB, BOOL bDBConn);
+	void CloseDBConn(BOOL bToDisconn, BOOL bToClose);
 	void CallDBTable();
 
 	//-----------------------------------
