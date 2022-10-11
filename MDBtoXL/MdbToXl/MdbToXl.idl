@@ -1,0 +1,29 @@
+﻿// MdbToXl.idl: MdbToXl.exe의 형식 라이브러리 소스
+
+// 이 파일은 MIDL 컴파일러에 의해 처리되어
+// 형식 라이브러리(MdbToXl.tlb)입니다.
+
+[ uuid(648b230e-01aa-4a55-bae9-5919da98a252), version(1.0) ]
+library MdbToXl
+{
+	importlib("stdole32.tlb");
+	importlib("stdole2.tlb");
+
+	//  CMdbToXlDoc의 기본 디스패치 인터페이스
+
+	[ uuid(b2552b72-e43c-4e0f-ad5a-3cb6caf0cc84) ]
+	dispinterface IMdbToXl
+	{
+		properties:
+
+		methods:
+	};
+
+	//  CMdbToXlDoc에 대한 클래스 정보
+
+	[ uuid(01453ab3-885f-4346-8634-6df01fff74f8) ]
+	coclass MdbToXl
+	{
+		[default] dispinterface IMdbToXl;
+	};
+};
