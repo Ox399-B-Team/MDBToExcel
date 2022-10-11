@@ -129,21 +129,22 @@ CMdbToXlDlg::~CMdbToXlDlg()
 	if (m_pAutoProxy != nullptr)
 		m_pAutoProxy->m_pDialog = nullptr;
 
+	//스레드 동작 중일 시 강제 종료
+	if (m_hExcelThread != NULL)
+	{
+		m_pExcelServer->ReleaseExcel();
+		delete m_pExcelServer;
+		TerminateThread(m_hExcelThread, 0);
+		CloseHandle(m_hExcelThread);
+		m_hExcelThread = NULL;
+	}
+
 	//CloseDBConn(&m_DB, m_bConn);
 	if (m_bConn)
 	{
 		m_pRecordset->Close();
 		delete m_pRecordset;
 		m_DB.Close();
-	}
-	
-	//스레드 동작 중일 시 강제 종료
-	if (m_hExcelThread != NULL)
-	{		
-		m_pExcelServer->ReleaseExcel();
-		delete(m_pExcelServer);
-		TerminateThread(m_hExcelThread,0);
-		CloseHandle(m_hExcelThread);
 	}
 }
 
@@ -653,13 +654,16 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 		pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("파일 저장 완료"));
 		pMainWnd->m_ctrlProgress.SetPos(0); // 프로그래스 바 종료
 	}
-	pMainWnd->m_pExcelServer->ReleaseExcel(); // 엑셀파일 종료
+	pMainWnd->GetDlgItem(btnFileLoad)->EnableWindow(TRUE);
+	pMainWnd->GetDlgItem(btnInput)->EnableWindow(TRUE);
+		
 	pMainWnd->SetDlgItemText(btnSave, _T("저장하기"));
 	pMainWnd->m_pRecordset->MoveFirst();
 	
-	CloseHandle(pMainWnd->m_hExcelThread);
-	pMainWnd->m_hExcelThread = NULL;
-	delete(pMainWnd->m_pExcelServer);
+	pMainWnd->m_pExcelServer->ReleaseExcel();	// 엑셀파일 종료
+	CloseHandle(pMainWnd->m_hExcelThread);		// 핸들 제거
+	pMainWnd->m_hExcelThread = NULL;			// 핸들 초기화
+	delete(pMainWnd->m_pExcelServer);			// new delete
 	return 0;
 }
 
