@@ -8,6 +8,7 @@
 #include <typeinfo>
 #include <afxdb.h>
 #include "CPictureEX.h"
+#include <Tlhelp32.h>
 
 #pragma once
 using namespace std;
@@ -71,6 +72,7 @@ public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual void OnOK();
 	virtual void OnCancel();
+	virtual BOOL KillProcess(CString sProcessName);
 	//-----------------------------------
 	// MDB 관련
 	CDatabase m_DB;
