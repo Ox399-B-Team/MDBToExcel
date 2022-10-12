@@ -8,6 +8,7 @@
 #include <typeinfo>
 #include <afxdb.h>
 #include "CPictureEX.h"
+#include <TlHelp32.h>
 
 #pragma once
 using namespace std;
@@ -98,7 +99,7 @@ public:
 	HANDLE m_hExcelThread;
 
 	CXLEzAutomation *m_pExcelServer;
-	
+
 	//HANDLE m_hSaveCancleEvent;		//강사 확인 후 열 것!!
 	//-----------------------------------
 	// GUI 관련
@@ -112,9 +113,11 @@ public:
 	CListCtrl m_ctrlExcelList;
 	CProgressCtrl m_ctrlProgress;
 
+	void FirstInput(CString strTable);
 	//--------------------------------------
 	// 로고 관련
 	CPictureEx m_ctrlROGO;
 
+	CStatic TEST;
 };
 

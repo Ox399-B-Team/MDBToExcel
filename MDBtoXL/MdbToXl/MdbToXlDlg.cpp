@@ -99,6 +99,10 @@ void CMdbToXlDlg::CallDBTable()
 	char pcName[256];
 	int nIdx = 0;
 
+	int a = 0;
+	CString outputName = _T("");
+	BOOL bswitch = FALSE;
+
 	SQLAllocStmt(m_DB.m_hdbc, &hStmt);
 	if (SQLTables(hStmt, NULL, 0, NULL, 0, NULL, 0, _T("TABLE"), SQL_NTS) != SQL_ERROR)
 	{ /* OK */
@@ -106,10 +110,17 @@ void CMdbToXlDlg::CallDBTable()
 		{ /* Data found */
 			while (!SQLGetData(hStmt, 3, SQL_C_CHAR, pcName, 256, &lLen))
 			{ /* We have a name */
-				if (pcName[0] != '~')
+				if (pcName[0] != _T('~'))
 				{
 					// Do something with the name here
 					strUnicode = pcName; // Char to CString
+
+					if (strUnicode == _T("SV_DVVAL"))
+					{
+						outputName = strUnicode;
+						bswitch = TRUE;
+						a = nIdx;
+					}
 					m_ctrlTable.InsertString(nIdx, strUnicode);
 					nIdx++;
 				}
@@ -118,7 +129,38 @@ void CMdbToXlDlg::CallDBTable()
 		}
 	}
 	SQLFreeStmt(hStmt, SQL_CLOSE);
-	m_ctrlTable.SetCurSel(0);
+	if (bswitch)
+		m_ctrlTable.SetCurSel(a);
+	else
+		m_ctrlTable.SetCurSel(0);
+}
+
+void CMdbToXlDlg::FirstInput(CString strTable)
+{
+	if (m_strTable == strTable)
+	{
+		m_ctrlFieldList.SetCheck(2);
+		m_ctrlFieldList.SetCheck(3);
+		m_ctrlFieldList.SetCheck(7);
+		m_ctrlFieldList.SetCheck(4);
+		m_ctrlFieldList.SetCheck(5);
+
+		m_ctrlExcelList.SetItemText(0, 0, _T("SVID"));
+		m_VstExcelValue.at(0).strExcelName = _T("SVID");
+
+		m_ctrlExcelList.SetItemText(1, 0, _T("VID NAME"));
+		m_VstExcelValue.at(1).strExcelName = _T("VID NAME");
+
+		m_ctrlExcelList.SetItemText(2, 0, _T("VID Description"));
+		m_VstExcelValue.at(2).strExcelName = _T("VID Description");
+
+		m_ctrlExcelList.SetItemText(3, 0, _T("FORMAT"));
+		m_VstExcelValue.at(3).strExcelName = _T("FORMAT");
+
+		m_ctrlExcelList.SetItemText(4, 0, _T("Type Size"));
+		m_VstExcelValue.at(4).strExcelName = _T("Type Size");
+	}
+	
 }
 
 
@@ -130,16 +172,20 @@ CMdbToXlDlg::~CMdbToXlDlg()
 	if (m_pAutoProxy != nullptr)
 		m_pAutoProxy->m_pDialog = nullptr;
 
-	CloseDBConn(m_bConn,TRUE);
-	
 	//스레드 동작 중일 시 강제 종료
 	if (m_hExcelThread != NULL)
-	{		
+	{
+		//TerminateProcess(m_hExcelThread, SC_CLOSE);
+		//ExitProcess(0);
+
 		m_pExcelServer->ReleaseExcel();
-		delete(m_pExcelServer);
-		TerminateThread(m_hExcelThread,0);
-		CloseHandle(m_hExcelThread);
+		delete m_pExcelServer;
+					
+		TerminateThread(m_hExcelThread, 0);
+		CloseHandle(m_hExcelThread);	
+		m_hExcelThread = NULL;
 	}
+	CloseDBConn(m_bConn, TRUE);
 }
 
 void CMdbToXlDlg::DoDataExchange(CDataExchange* pDX)
@@ -155,6 +201,7 @@ void CMdbToXlDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_UPDATE_NAME, m_strEdit);
 	DDX_CBString(pDX, IDC_TABLE, m_strTable);
 	DDX_Control(pDX, IDC_LOGO, m_ctrlROGO);
+	DDX_Control(pDX, IDC_STATIC_TEST, TEST);
 }
 
 BEGIN_MESSAGE_MAP(CMdbToXlDlg, CDialogEx)
@@ -302,6 +349,8 @@ BOOL CMdbToXlDlg::CanExit()
 	return TRUE;
 }
 
+
+
 // 확장자를 뺀 파일명 복사
 CString CMdbToXlDlg::strClip(CString str)
 {
@@ -405,6 +454,7 @@ void CMdbToXlDlg::OnBnClickedbtnfileload()
 			}
 			END_CATCH;
 
+			FirstInput(_T("SV_DVVAL"));
 			m_bConn = TRUE;
 		}
 		CATCH(CDBException, e)
@@ -484,32 +534,8 @@ void CMdbToXlDlg::OnBnClickedbtninput()
 			AfxMessageBox(_T("해당 테이블이 존재하지 않습니다."));
 		}END_CATCH;
 
-		////////////////////////////////////////////////////////////
 		//테이블이 SV_DVVAL일 때
-		/*if (m_strTable == _T("SV_DVVAL"))
-		{
-			m_ctrlFieldList.SetCheck(2);
-			m_ctrlFieldList.SetCheck(3);
-			m_ctrlFieldList.SetCheck(7);
-			m_ctrlFieldList.SetCheck(4);
-			m_ctrlFieldList.SetCheck(5);
-
-			m_ctrlExcelList.SetItemText(0, 0, _T("SVID"));
-			m_VstExcelValue.at(0).strExcelName = _T("SVID");
-
-			m_ctrlExcelList.SetItemText(1, 0, _T("VID NAME"));
-			m_VstExcelValue.at(1).strExcelName = _T("VID NAME");
-
-			m_ctrlExcelList.SetItemText(2, 0, _T("VID Description"));
-			m_VstExcelValue.at(2).strExcelName = _T("VID Description");
-
-			m_ctrlExcelList.SetItemText(3, 0, _T("FORMAT"));
-			m_VstExcelValue.at(3).strExcelName = _T("FORMAT");
-
-			m_ctrlExcelList.SetItemText(4, 0, _T("Type Size"));
-			m_VstExcelValue.at(4).strExcelName = _T("Type Size");
-		}
-		*/
+		FirstInput(_T("SV_DVVAL"));
 		//////////////////////////////////////////////////////////////////////////
 		m_bConn = TRUE;
 		GetDlgItem(btnInput)->EnableWindow(FALSE);
@@ -517,10 +543,8 @@ void CMdbToXlDlg::OnBnClickedbtninput()
 		SetDlgItemText(IDC_PASSWORD, _T(""));
 		GetDlgItem(IDC_PASSWORD)->EnableWindow(FALSE);
 	}
-		CATCH(CDBException, e)
-	{
+	CATCH(CDBException, e)
 		AfxMessageBox(_T("비밀번호가 유효하지 않습니다."));
-	}
 	END_CATCH;
 }
 
@@ -564,6 +588,8 @@ void CMdbToXlDlg::OnCbnSelchangeTable()
 	}
 	END_CATCH;
 
+	FirstInput(_T("SV_DVVAL"));
+
 	m_bConn = TRUE;
 	SetDlgItemText(IDC_PASSWORD, _T(""));
 	GetDlgItem(btnInput)->EnableWindow(FALSE);
@@ -573,7 +599,6 @@ void CMdbToXlDlg::OnCbnSelchangeTable()
 DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 {
 	CMdbToXlDlg* pMainWnd = (CMdbToXlDlg*)p;
-	//CMdbToXlDlg* pThreadMDB = (CMdbToXlDlg*)AfxGetMainWnd();
 	int nRow = 0;
 	int nColumn = 0;
 	CString strData; // CELL에 입력될 값을 받을 변수
@@ -581,7 +606,6 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 	pMainWnd->m_pExcelServer = new CXLEzAutomation(FALSE);
 
 	pMainWnd->GetDlgItem(btnFileLoad)->EnableWindow(FALSE);
-	pMainWnd->GetDlgItem(btnInput)->EnableWindow(FALSE);
 	//Excel 파일 관련 변수----------------------------------------------
 	 //엑셀 API함수를 사용하기 위한 변수 선언
 
@@ -595,6 +619,8 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 
 	//프로그레스 바 관련 작업 -----------------------------------------------------------
 	int nValueCount = 0; // 전체 count가 필요함
+	CString A;
+	int AA=0;
 	while (!pMainWnd->m_pRecordset->IsEOF())
 	{
 		for (int i = 0; i < nFieldCount; i++) //필드 갯수 만큼만 반복
@@ -611,13 +637,15 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 	nRow = 2; // 2행부터 출력하기 위해 Row를 2로 잡음(함수 -> 1부터 시작)
 	while (!pMainWnd->m_pRecordset->IsEOF())
 	{
+		
 		for (int i = 0; i < nFieldCount; i++)
 		{
 			pMainWnd->m_pRecordset->GetFieldValue(short(pMainWnd->m_VstExcelValue.at(i).nFieldIdcnt), strData);
 			pMainWnd->m_pExcelServer->SetCellValue(i + 1, nRow, strData);
 			nSetCnt = nSetCnt + 1;
 			pMainWnd->m_ctrlProgress.SetPos(nSetCnt); // 프로그래스 바 진행상황
-
+			
+			
 			/*
 				///////////////////////////////////////
 				//이벤트 관련 추가소스
@@ -641,27 +669,29 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 		nRow++;
 		pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
 	}
-
+	
 	bool bSaveXL = pMainWnd->m_pExcelServer->SaveFileAs(pMainWnd->m_strExcelPathName); //SaveFileAs : 엑셀 파일 저장
 	if (bSaveXL == true)
 	{
 		pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("파일 저장 완료"));
 		pMainWnd->m_ctrlProgress.SetPos(0); // 프로그래스 바 종료
 	}
-	pMainWnd->m_pExcelServer->ReleaseExcel(); // 엑셀파일 종료
+	pMainWnd->GetDlgItem(btnFileLoad)->EnableWindow(TRUE);
+		
 	pMainWnd->SetDlgItemText(btnSave, _T("저장하기"));
 	pMainWnd->m_pRecordset->MoveFirst();
 	
-	CloseHandle(pMainWnd->m_hExcelThread);
-	pMainWnd->m_hExcelThread = NULL;
-	delete(pMainWnd->m_pExcelServer);
+	pMainWnd->m_pExcelServer->ReleaseExcel();	// 엑셀파일 종료
+	CloseHandle(pMainWnd->m_hExcelThread);		// 핸들 제거
+	pMainWnd->m_hExcelThread = NULL;			// 핸들 초기화
+	delete(pMainWnd->m_pExcelServer);			// new delete
 	return 0;
 }
 
 void CMdbToXlDlg::OnBnClickedbtnsave()
 {
 	if (m_hExcelThread != NULL) //스레드가 동작하지 않을 경우
-	{
+	{		
 		AfxMessageBox(_T("파일 저장 중입니다."));
 	}
 	else
@@ -684,11 +714,7 @@ void CMdbToXlDlg::OnLvnItemchangedFieldlist(NMHDR* pNMHDR, LRESULT* pResult)
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
 
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-
-	//pNMLV->uChanged
-
 	int nCount = m_ctrlFieldList.GetItemCount();
-
 
 	for (int i = nCount - 1; i >= 0; i--)
 	{
@@ -763,6 +789,8 @@ void CMdbToXlDlg::OnLvnItemchangedFieldlist(NMHDR* pNMHDR, LRESULT* pResult)
 		GetDlgItem(btnCancel)->EnableWindow(FALSE);
 	}
 
+	GetDlgItem(IDC_ExcelList)->SendMessage(WM_KILLFOCUS, NULL);
+	GetDlgItem(IDC_FieldList)->SendMessage(WM_KILLFOCUS, NULL);
 	*pResult = 0;
 }
 
@@ -811,8 +839,6 @@ void CMdbToXlDlg::OnNMClickExcellist(NMHDR* pNMHDR, LRESULT* pResult)
 		GetDlgItem(btnUpdate)->EnableWindow(TRUE);
 		GetDlgItem(IDC_UPDATE_NAME)->EnableWindow(TRUE);
 	}
-
-
 	UpdateData(0);// 컨트롤 << 변수 // edit창에 이름 박기
 }
 
@@ -838,15 +864,6 @@ void CMdbToXlDlg::OnNMClickFieldlist(NMHDR* pNMHDR, LRESULT* pResult)
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	*pResult = 0;
 	int idx = pNMItemActivate->iItem;
-
-	/*if (m_ctrlFieldList.GetCheck(idx))
-	{
-		m_ctrlFieldList.SetCheck(idx, FALSE);
-	}
-	else
-	{
-		m_ctrlFieldList.SetCheck(idx, TRUE);
-	}*/
 
 	if (idx != -1)
 	{
@@ -876,7 +893,6 @@ BOOL CMdbToXlDlg::PreTranslateMessage(MSG* pMsg)
 			return TRUE;
 		}
 	}
-
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
