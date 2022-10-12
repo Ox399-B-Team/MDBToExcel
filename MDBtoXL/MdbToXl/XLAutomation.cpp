@@ -82,10 +82,13 @@ CXLAutomation::~CXLAutomation()
 	//ReleaseExcel();
 	ReleaseDispatch();
 	OleUninitialize();
+	OleInitialize(NULL);
 }
 
 BOOL CXLAutomation::InitOLE()
 {
+	OleUninitialize();
+
 	DWORD dwOleVer;
 	
 	dwOleVer = CoBuildVersion();
@@ -105,11 +108,9 @@ BOOL CXLAutomation::InitOLE()
 	{
 		MessageBox(NULL, _T("Cannot initialize OLE."), _T("Failed"), MB_OK | MB_ICONSTOP);
 		return FALSE;
-	}
-	
-		
-	return TRUE;
+	}		
 
+	return TRUE;
 }
 
 BOOL CXLAutomation::StartExcel()
@@ -1260,6 +1261,8 @@ BOOL CXLAutomation::OpenExcelFile(CString szFileName)
 	ClearAllArgs();
 	if (!ExlInvoke(m_pdispWorkbook, L"Close", NULL, DISPATCH_PROPERTYGET, DISP_FREEARGS))
 		return FALSE;
+
+	ReleaseVariant(&varg1);
 	//Remember the newly open worksheet 
 	m_pdispWorkbook = vargWorkbook.pdispVal;
 	m_pdispWorksheet = vargWorksheet.pdispVal;

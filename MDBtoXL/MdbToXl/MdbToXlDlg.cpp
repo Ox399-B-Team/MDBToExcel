@@ -179,8 +179,8 @@ CMdbToXlDlg::~CMdbToXlDlg()
 		//ExitProcess(0);
 
 		m_pExcelServer->ReleaseExcel();
-		delete m_pExcelServer;
-					
+		delete m_pExcelServer;		
+		KillProcess(_T("EXCEL.EXE")); //Excel 프로세스 종료 함수
 		TerminateThread(m_hExcelThread, 0);
 		CloseHandle(m_hExcelThread);	
 		m_hExcelThread = NULL;
@@ -594,6 +594,56 @@ void CMdbToXlDlg::OnCbnSelchangeTable()
 	SetDlgItemText(IDC_PASSWORD, _T(""));
 	GetDlgItem(btnInput)->EnableWindow(FALSE);
 	GetDlgItem(btnAllSelect)->EnableWindow(TRUE);
+}
+
+BOOL CMdbToXlDlg::KillProcess(CString sProcessName)
+{
+	HANDLE         hProcessSnap = NULL;
+	DWORD          Return = FALSE;
+	PROCESSENTRY32 pe32 = { 0 };
+
+	CString ProcessName = sProcessName;
+	ProcessName.MakeLower();
+
+	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+	if (hProcessSnap == INVALID_HANDLE_VALUE)
+		return (DWORD)INVALID_HANDLE_VALUE;
+
+	pe32.dwSize = sizeof(PROCESSENTRY32);
+
+	if (Process32First(hProcessSnap, &pe32))
+	{
+		DWORD Code = 0;
+		DWORD dwPriorityClass;
+
+		do {
+			HANDLE hProcess;
+			hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe32.th32ProcessID);
+			dwPriorityClass = GetPriorityClass(hProcess);
+
+			CString Temp = pe32.szExeFile;
+			Temp.MakeLower();
+
+			if (Temp == ProcessName)
+			{
+				if (TerminateProcess(hProcess, 0))
+					GetExitCodeProcess(hProcess, &Code);
+				else
+					return GetLastError();
+			}
+			CloseHandle(hProcess);
+		} while (Process32Next(hProcessSnap, &pe32));
+		Return = TRUE;
+	}
+	else
+	{
+		Return = FALSE;
+	}
+
+	CloseHandle(hProcessSnap);
+
+	return Return;
 }
 
 DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)

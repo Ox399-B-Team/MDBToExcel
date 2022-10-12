@@ -120,4 +120,3 @@ BOOL CXLEzAutomation::InsertPictureFromBuffer(BYTE *pImage, int Column, int Row,
 {
 	return m_pXLServer->InsertPictureToWorksheet(pImage, Column, Row, dXScale, dYScale);
 }
-
