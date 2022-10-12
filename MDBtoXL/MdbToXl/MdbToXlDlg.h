@@ -99,9 +99,6 @@ public:
 	CString m_strExcelPathName;
 	HANDLE m_hExcelThread;
 
-	CXLEzAutomation *m_pExcelServer;
-
-	//HANDLE m_hSaveCancleEvent;		//강사 확인 후 열 것!!
 	//-----------------------------------
 	// GUI 관련
 	int m_nXlRowNum;				// excel 행 증가	

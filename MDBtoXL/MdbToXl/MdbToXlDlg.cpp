@@ -64,7 +64,6 @@ CMdbToXlDlg::CMdbToXlDlg(CWnd* pParent /*=nullptr*/)
 
 	m_hExcelThread = NULL; // 스레드 : 핸들 초기화
 	m_strExcelPathName = _T(""); //스레드 : 저장 파일명 초기화 
-	m_pExcelServer = NULL;
 }
 
 void CMdbToXlDlg::CloseDBConn(BOOL bToDisconn = FALSE, BOOL bToClose = FALSE)
@@ -163,7 +162,6 @@ void CMdbToXlDlg::FirstInput(CString strTable)
 	
 }
 
-
 CMdbToXlDlg::~CMdbToXlDlg()
 {
 	// 이 대화 상자에 대한 자동화 프록시가 있을 경우 이 대화 상자에 대한
@@ -175,16 +173,14 @@ CMdbToXlDlg::~CMdbToXlDlg()
 	//스레드 동작 중일 시 강제 종료
 	if (m_hExcelThread != NULL)
 	{
-		//TerminateProcess(m_hExcelThread, SC_CLOSE);
-		//ExitProcess(0);
-
-		m_pExcelServer->ReleaseExcel();
-		delete m_pExcelServer;		
+		//m_pExcelServer->ReleaseExcel();
+		//delete m_pExcelServer;		
 		KillProcess(_T("EXCEL.EXE")); //Excel 프로세스 종료 함수
 		TerminateThread(m_hExcelThread, 0);
 		CloseHandle(m_hExcelThread);	
 		m_hExcelThread = NULL;
 	}
+
 	CloseDBConn(m_bConn, TRUE);
 }
 
@@ -653,7 +649,8 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 	int nColumn = 0;
 	CString strData; // CELL에 입력될 값을 받을 변수
 
-	pMainWnd->m_pExcelServer = new CXLEzAutomation(FALSE);
+	//pMainWnd->m_pExcelServer = new CXLEzAutomation(FALSE);
+	CXLEzAutomation ExcelServer(FALSE);
 
 	pMainWnd->GetDlgItem(btnFileLoad)->EnableWindow(FALSE);
 	//Excel 파일 관련 변수----------------------------------------------
@@ -664,7 +661,7 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 	int nFieldCount = pMainWnd->m_VstExcelValue.size();
 	for (int i = 0; i < nFieldCount; i++)
 	{
-		pMainWnd->m_pExcelServer->SetCellValue(i + 1, 1, pMainWnd->m_VstExcelValue.at(i).strExcelName); //SetCellValue : 셀의 내용 설정 
+		ExcelServer.SetCellValue(i + 1, 1, pMainWnd->m_VstExcelValue.at(i).strExcelName); //SetCellValue : 셀의 내용 설정 
 	}
 
 	//프로그레스 바 관련 작업 -----------------------------------------------------------
@@ -687,40 +684,19 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 	nRow = 2; // 2행부터 출력하기 위해 Row를 2로 잡음(함수 -> 1부터 시작)
 	while (!pMainWnd->m_pRecordset->IsEOF())
 	{
-		
 		for (int i = 0; i < nFieldCount; i++)
 		{
 			pMainWnd->m_pRecordset->GetFieldValue(short(pMainWnd->m_VstExcelValue.at(i).nFieldIdcnt), strData);
-			pMainWnd->m_pExcelServer->SetCellValue(i + 1, nRow, strData);
+			ExcelServer.SetCellValue(i + 1, nRow, strData);
 			nSetCnt = nSetCnt + 1;
 			pMainWnd->m_ctrlProgress.SetPos(nSetCnt); // 프로그래스 바 진행상황
-			
-			
-			/*
-				///////////////////////////////////////
-				//이벤트 관련 추가소스
-				if (WaitForSingleObject(pMainWnd->m_hSaveCancleEvent, 0) == WAIT_TIMEOUT)
-				{
-					if (AfxMessageBox(_T("다운로드를 중지하겠습니까?"), MB_YESNO) == IDYES)
-					{
-						pMainWnd->m_ctrlProgress.SetPos(0);
-						pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("저장 취소"));
-						return 0;
-					}
-					else
-					{
-						SetEvent(pMainWnd->m_hSaveCancleEvent);
-					}
-				}
-				///////////////////////////////////////
-			*/
 		}
 		pMainWnd->m_pRecordset->MoveNext();
 		nRow++;
 		pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
 	}
 	
-	bool bSaveXL = pMainWnd->m_pExcelServer->SaveFileAs(pMainWnd->m_strExcelPathName); //SaveFileAs : 엑셀 파일 저장
+	bool bSaveXL = ExcelServer.SaveFileAs(pMainWnd->m_strExcelPathName); //SaveFileAs : 엑셀 파일 저장
 	if (bSaveXL == true)
 	{
 		pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("파일 저장 완료"));
@@ -731,10 +707,10 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 	pMainWnd->SetDlgItemText(btnSave, _T("저장하기"));
 	pMainWnd->m_pRecordset->MoveFirst();
 	
-	pMainWnd->m_pExcelServer->ReleaseExcel();	// 엑셀파일 종료
+	ExcelServer.ReleaseExcel();	// 엑셀파일 종료
 	CloseHandle(pMainWnd->m_hExcelThread);		// 핸들 제거
 	pMainWnd->m_hExcelThread = NULL;			// 핸들 초기화
-	delete(pMainWnd->m_pExcelServer);			// new delete
+	//delete(pMainWnd->m_pExcelServer);			// new delete
 	return 0;
 }
 
