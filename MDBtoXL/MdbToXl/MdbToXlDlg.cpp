@@ -160,7 +160,6 @@ void CMdbToXlDlg::FirstInput(CString strTable)
 		m_ctrlExcelList.SetItemText(4, 0, _T("Type Size"));
 		m_VstExcelValue.at(4).strExcelName = _T("Type Size");
 	}
-	
 }
 
 
@@ -175,11 +174,6 @@ CMdbToXlDlg::~CMdbToXlDlg()
 	//스레드 동작 중일 시 강제 종료
 	if (m_hExcelThread != NULL)
 	{
-		//TerminateProcess(m_hExcelThread, SC_CLOSE);
-		//ExitProcess(0);
-
-		m_pExcelServer->ReleaseExcel();
-		delete m_pExcelServer;		
 		KillProcess(_T("EXCEL.EXE")); //Excel 프로세스 종료 함수
 		TerminateThread(m_hExcelThread, 0);
 		CloseHandle(m_hExcelThread);	
@@ -637,12 +631,9 @@ BOOL CMdbToXlDlg::KillProcess(CString sProcessName)
 		Return = TRUE;
 	}
 	else
-	{
 		Return = FALSE;
-	}
 
 	CloseHandle(hProcessSnap);
-
 	return Return;
 }
 
@@ -670,8 +661,7 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 
 	//프로그레스 바 관련 작업 -----------------------------------------------------------
 	int nValueCount = 0; // 전체 count가 필요함
-	CString A;
-	int AA=0;
+
 	while (!pMainWnd->m_pRecordset->IsEOF())
 	{
 		for (int i = 0; i < nFieldCount; i++) //필드 갯수 만큼만 반복
