@@ -8,7 +8,7 @@
 #include <typeinfo>
 #include <afxdb.h>
 #include "CPictureEX.h"
-#include <Tlhelp32.h>
+#include <TlHelp32.h>
 
 #pragma once
 using namespace std;
@@ -90,7 +90,7 @@ public:
 	CString m_strTable;
 	CString m_strPW;
 
-	void CloseDBConn(CDatabase* pDB, BOOL bDBConn);
+	void CloseDBConn(BOOL bToDisconn, BOOL bToClose);
 	void CallDBTable();
 
 	//-----------------------------------
@@ -100,7 +100,7 @@ public:
 	HANDLE m_hExcelThread;
 
 	CXLEzAutomation *m_pExcelServer;
-	
+
 	//HANDLE m_hSaveCancleEvent;		//강사 확인 후 열 것!!
 	//-----------------------------------
 	// GUI 관련
@@ -114,9 +114,11 @@ public:
 	CListCtrl m_ctrlExcelList;
 	CProgressCtrl m_ctrlProgress;
 
+	void FirstInput(CString strTable);
 	//--------------------------------------
 	// 로고 관련
 	CPictureEx m_ctrlROGO;
 
+	CStatic TEST;
 };
 
