@@ -57,6 +57,10 @@ CMdbToXlDlg::CMdbToXlDlg(CWnd* pParent /*=nullptr*/)
 	, m_strTable(_T(""))
 	, m_strEdit(_T(""))
 	, m_strFileName(_T(""))
+	, m_strEdit2(_T(""))
+	, m_strEdit3(_T(""))
+	, m_strEdit4(_T(""))
+	, m_strEdit5(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_pAutoProxy = nullptr;
@@ -64,27 +68,32 @@ CMdbToXlDlg::CMdbToXlDlg(CWnd* pParent /*=nullptr*/)
 
 	m_hExcelThread = NULL; // 스레드 : 핸들 초기화
 	m_strExcelPathName = _T(""); //스레드 : 저장 파일명 초기화 
-	m_pExcelServer = NULL;
 }
 
 void CMdbToXlDlg::CloseDBConn(BOOL bToDisconn = FALSE, BOOL bToClose = FALSE)
 {
 	if (m_bConn)
 	{
+		m_stFieldInfo.nFieldIdcnt = 0;
+		m_stFieldInfo.nExcelIdcnt = 0;
+		m_stFieldInfo.strExcelName = _T("");
+		m_stFieldInfo.strFieldName = _T("");
+
 		m_pRecordset->Close();
 		if (bToDisconn)
 		{
 			delete m_pRecordset;
 			m_DB.Close();
 		}
+
 		if (!bToClose)
 		{
+			m_VstExcelValue.clear();
+			m_VstTrueFieldValue.clear();
+
 			m_ctrlExcelList.DeleteAllItems();
 			m_ctrlFieldList.DeleteAllItems();
 			SetDlgItemText(IDC_UPDATE_NAME, _T(""));
-
-			m_VstExcelValue.clear();
-			m_VstTrueFieldValue.clear();
 		}
 		m_bConn = FALSE;
 	}
@@ -162,7 +171,6 @@ void CMdbToXlDlg::FirstInput(CString strTable)
 	}
 }
 
-
 CMdbToXlDlg::~CMdbToXlDlg()
 {
 	// 이 대화 상자에 대한 자동화 프록시가 있을 경우 이 대화 상자에 대한
@@ -179,6 +187,7 @@ CMdbToXlDlg::~CMdbToXlDlg()
 		CloseHandle(m_hExcelThread);	
 		m_hExcelThread = NULL;
 	}
+
 	CloseDBConn(m_bConn, TRUE);
 }
 
@@ -195,7 +204,13 @@ void CMdbToXlDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_UPDATE_NAME, m_strEdit);
 	DDX_CBString(pDX, IDC_TABLE, m_strTable);
 	DDX_Control(pDX, IDC_LOGO, m_ctrlROGO);
+
+	//////////////////////////////////////임시코드
 	DDX_Control(pDX, IDC_STATIC_TEST, TEST);
+	DDX_Text(pDX, IDC_EDIT2, m_strEdit2);
+	DDX_Text(pDX, IDC_EDIT3, m_strEdit3);
+	DDX_Text(pDX, IDC_EDIT4, m_strEdit4);
+	DDX_Text(pDX, IDC_EDIT5, m_strEdit5);
 }
 
 BEGIN_MESSAGE_MAP(CMdbToXlDlg, CDialogEx)
@@ -213,6 +228,7 @@ BEGIN_MESSAGE_MAP(CMdbToXlDlg, CDialogEx)
 	ON_BN_CLICKED(btnAllSelect, &CMdbToXlDlg::OnBnClickedbtnallselect)
 	ON_BN_CLICKED(btnCancel, &CMdbToXlDlg::OnBnClickedbtncancel)
 	ON_NOTIFY(NM_CLICK, IDC_FieldList, &CMdbToXlDlg::OnNMClickFieldlist)
+	ON_BN_CLICKED(btnExcelSave, &CMdbToXlDlg::OnBnClickedbtnexcelsave)
 END_MESSAGE_MAP()
 
 // CMdbToXlDlg 메시지 처리기
@@ -476,11 +492,6 @@ void CMdbToXlDlg::OnBnClickedbtninput()
 
 	m_nXlRowNum = 0;
 
-	m_stFieldInfo.nFieldIdcnt = 0;
-	m_stFieldInfo.nExcelIdcnt = 0;
-	m_stFieldInfo.strExcelName = _T("");
-	m_stFieldInfo.strFieldName = _T("");
-
 	UpdateData(1);// 컨트롤 >> 변수 // 비밀번호 가져오기 // 테이블 변경 시 필드 목록 재설정
 
 	TRY
@@ -559,7 +570,6 @@ void CMdbToXlDlg::OnCbnSelchangeTable()
 		m_pRecordset->Open(CRecordset::dynaset, strQuery);
 		int FCount = m_pRecordset->GetODBCFieldCount();
 
-		m_bConn = TRUE;
 		for (int i = 0; i < FCount; i++)
 		{
 			m_pRecordset->GetODBCFieldInfo(i, fieldInfo);
@@ -582,9 +592,9 @@ void CMdbToXlDlg::OnCbnSelchangeTable()
 	}
 	END_CATCH;
 
+	m_bConn = TRUE;
 	FirstInput(_T("SV_DVVAL"));
 
-	m_bConn = TRUE;
 	SetDlgItemText(IDC_PASSWORD, _T(""));
 	GetDlgItem(btnInput)->EnableWindow(FALSE);
 	GetDlgItem(btnAllSelect)->EnableWindow(TRUE);
@@ -640,6 +650,9 @@ BOOL CMdbToXlDlg::KillProcess(CString sProcessName)
 DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 {
 	CMdbToXlDlg* pMainWnd = (CMdbToXlDlg*)p;
+
+	vector<FieldINFO> VstExcelValClone = pMainWnd->m_VstExcelValue;
+
 	int nRow = 0;
 	int nColumn = 0;
 	CString strData; // CELL에 입력될 값을 받을 변수
@@ -653,10 +666,11 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 
 	//MDB파일 데이터 배열에 저장하기---------------------------------------------
 	//첫번째 ROW 필드명들만 삽입
-	int nFieldCount = pMainWnd->m_VstExcelValue.size();
+	int nFieldCount = VstExcelValClone.size();
 	for (int i = 0; i < nFieldCount; i++)
 	{
-		ExcelServer.SetCellValue(i + 1, 1, pMainWnd->m_VstExcelValue.at(i).strExcelName); //SetCellValue : 셀의 내용 설정 
+		//ExcelServer.SetCellValue(i + 1, 1, pMainWnd->m_VstExcelValue.at(i).strExcelName); //SetCellValue : 셀의 내용 설정 
+		ExcelServer.SetCellValue(i + 1, 1, VstExcelValClone.at(i).strExcelName); //SetCellValue : 셀의 내용 설정
 	}
 
 	//프로그레스 바 관련 작업 -----------------------------------------------------------
@@ -680,7 +694,7 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 	{		
 		for (int i = 0; i < nFieldCount; i++)
 		{
-			pMainWnd->m_pRecordset->GetFieldValue(short(pMainWnd->m_VstExcelValue.at(i).nFieldIdcnt), strData);
+			pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
 			ExcelServer.SetCellValue(i + 1, nRow, strData);
 			nSetCnt = nSetCnt + 1;
 			pMainWnd->m_ctrlProgress.SetPos(nSetCnt); // 프로그래스 바 진행상황
@@ -849,6 +863,17 @@ void CMdbToXlDlg::OnNMClickExcellist(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 	}
 
+	/////////////////////임시코드  나중에 삭제할 코드
+	CString temp;
+	
+	m_strEdit2.SetString(m_VstExcelValue.at(m_nidx).strFieldName);
+	m_strEdit3.SetString(m_VstExcelValue.at(m_nidx).strExcelName);
+	temp.Format(_T("%d"), m_VstExcelValue.at(m_nidx).nFieldIdcnt);
+	m_strEdit4.SetString(temp);
+	temp.Format(_T("%d"), m_VstExcelValue.at(m_nidx).nExcelIdcnt);
+	m_strEdit5.SetString(temp);
+	///////////////////////////////////////////////
+
 	if (m_strEdit == _T(""))
 	{
 		GetDlgItem(btnUpdate)->EnableWindow(FALSE);
@@ -928,4 +953,13 @@ void CMdbToXlDlg::OnCancel()
 	// ESC 클릭시 종료되는 상황을 막기 위해, 아래 소스 막음
 	// :  X버튼에 대해서는 열어줄 필요가 있음
 	//CDialogEx::OnCancel();
+}
+
+
+void CMdbToXlDlg::OnBnClickedbtnexcelsave()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+
+	// 제발 빨라지라고 만든 버튼
+
 }

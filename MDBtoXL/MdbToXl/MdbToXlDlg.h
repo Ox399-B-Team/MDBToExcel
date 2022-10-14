@@ -99,9 +99,6 @@ public:
 	CString m_strExcelPathName;
 	HANDLE m_hExcelThread;
 
-	CXLEzAutomation *m_pExcelServer;
-
-	//HANDLE m_hSaveCancleEvent;		//강사 확인 후 열 것!!
 	//-----------------------------------
 	// GUI 관련
 	int m_nXlRowNum;				// excel 행 증가	
@@ -119,6 +116,13 @@ public:
 	// 로고 관련
 	CPictureEx m_ctrlROGO;
 
+
+	///////////////////////임시변수
 	CStatic TEST;
+	CString m_strEdit2;
+	CString m_strEdit3;
+	CString m_strEdit4;
+	CString m_strEdit5;
+	afx_msg void OnBnClickedbtnexcelsave();
 };
 
