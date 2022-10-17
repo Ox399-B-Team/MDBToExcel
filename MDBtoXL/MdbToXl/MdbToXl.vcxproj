@@ -197,6 +197,7 @@
   <ItemGroup>
     <ClInclude Include="CPictureEX.h" />
     <ClInclude Include="DlgProxy.h" />
+    <ClInclude Include="EasyRunExcel.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MdbToXl.h" />
     <ClInclude Include="MdbToXlDlg.h" />

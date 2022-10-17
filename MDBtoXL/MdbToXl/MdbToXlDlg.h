@@ -9,6 +9,7 @@
 #include <afxdb.h>
 #include "CPictureEX.h"
 #include <TlHelp32.h>
+//#include "EasyRunExcel.h"
 
 #pragma once
 using namespace std;
@@ -123,6 +124,7 @@ public:
 	CString m_strEdit3;
 	CString m_strEdit4;
 	CString m_strEdit5;
+
 	afx_msg void OnBnClickedbtnexcelsave();
 };
 

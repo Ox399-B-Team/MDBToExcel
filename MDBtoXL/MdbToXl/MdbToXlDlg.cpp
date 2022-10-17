@@ -74,6 +74,8 @@ void CMdbToXlDlg::CloseDBConn(BOOL bToDisconn = FALSE, BOOL bToClose = FALSE)
 {
 	if (m_bConn)
 	{
+		m_nXlRowNum = 0;
+
 		m_stFieldInfo.nFieldIdcnt = 0;
 		m_stFieldInfo.nExcelIdcnt = 0;
 		m_stFieldInfo.strExcelName = _T("");
