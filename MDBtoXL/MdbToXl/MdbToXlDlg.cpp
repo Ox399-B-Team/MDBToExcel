@@ -9,12 +9,17 @@
 //---데이터베이스 관련 헤더파일 추가
 #include <afxdb.h>
 
+//#pragma comment(lib,"C:\\Users\\BIT\\Desktop\\gitSub\\MDBtoXL\\MdbToXl\\lib\\xlsxwriter.lib") // lib 추가
+
+//#include "include/xlsxwriter.h"
 //엑셀 관련 헤더파일 추가
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
+//
+//#pragma comment (lib, "..\xlsxwriter.lib") //dll lib 입력
+#include "include/xlsxwriter.h"
 // 응용 프로그램 정보에 사용되는 CAboutDlg 대화 상자입니다.
 
 class CAboutDlg : public CDialogEx
@@ -57,10 +62,6 @@ CMdbToXlDlg::CMdbToXlDlg(CWnd* pParent /*=nullptr*/)
 	, m_strTable(_T(""))
 	, m_strEdit(_T(""))
 	, m_strFileName(_T(""))
-	, m_strEdit2(_T(""))
-	, m_strEdit3(_T(""))
-	, m_strEdit4(_T(""))
-	, m_strEdit5(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_pAutoProxy = nullptr;
@@ -206,13 +207,8 @@ void CMdbToXlDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_UPDATE_NAME, m_strEdit);
 	DDX_CBString(pDX, IDC_TABLE, m_strTable);
 	DDX_Control(pDX, IDC_LOGO, m_ctrlROGO);
-
-	//////////////////////////////////////임시코드
-	DDX_Control(pDX, IDC_STATIC_TEST, TEST);
-	DDX_Text(pDX, IDC_EDIT2, m_strEdit2);
-	DDX_Text(pDX, IDC_EDIT3, m_strEdit3);
-	DDX_Text(pDX, IDC_EDIT4, m_strEdit4);
-	DDX_Text(pDX, IDC_EDIT5, m_strEdit5);
+	DDX_Control(pDX, IDC_PROGRESS2, m_TestProgress);
+	DDX_Control(pDX, IDC_PROGRESS3, m_ProgressTest2);
 }
 
 BEGIN_MESSAGE_MAP(CMdbToXlDlg, CDialogEx)
@@ -231,6 +227,7 @@ BEGIN_MESSAGE_MAP(CMdbToXlDlg, CDialogEx)
 	ON_BN_CLICKED(btnCancel, &CMdbToXlDlg::OnBnClickedbtncancel)
 	ON_NOTIFY(NM_CLICK, IDC_FieldList, &CMdbToXlDlg::OnNMClickFieldlist)
 	ON_BN_CLICKED(btnExcelSave, &CMdbToXlDlg::OnBnClickedbtnexcelsave)
+	ON_BN_CLICKED(IDC_BUTTON1, &CMdbToXlDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 // CMdbToXlDlg 메시지 처리기
@@ -692,8 +689,10 @@ DWORD WINAPI MDBtoExcelWorkThread(LPVOID p)
 	pMainWnd->m_pRecordset->MoveFirst();
 	int nSetCnt = 0; // 프로그래스 바
 	nRow = 2; // 2행부터 출력하기 위해 Row를 2로 잡음(함수 -> 1부터 시작)
+
 	while (!pMainWnd->m_pRecordset->IsEOF())
 	{		
+		//pMainWnd->SetDlgItemText(IDC_TEST2,i)
 		for (int i = 0; i < nFieldCount; i++)
 		{
 			pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
@@ -865,17 +864,6 @@ void CMdbToXlDlg::OnNMClickExcellist(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 	}
 
-	/////////////////////임시코드  나중에 삭제할 코드
-	CString temp;
-	
-	m_strEdit2.SetString(m_VstExcelValue.at(m_nidx).strFieldName);
-	m_strEdit3.SetString(m_VstExcelValue.at(m_nidx).strExcelName);
-	temp.Format(_T("%d"), m_VstExcelValue.at(m_nidx).nFieldIdcnt);
-	m_strEdit4.SetString(temp);
-	temp.Format(_T("%d"), m_VstExcelValue.at(m_nidx).nExcelIdcnt);
-	m_strEdit5.SetString(temp);
-	///////////////////////////////////////////////
-
 	if (m_strEdit == _T(""))
 	{
 		GetDlgItem(btnUpdate)->EnableWindow(FALSE);
@@ -963,5 +951,354 @@ void CMdbToXlDlg::OnBnClickedbtnexcelsave()
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 
 	// 제발 빨라지라고 만든 버튼
+	CFileDialog dlg(false, _T("xlsx"), m_strFileName,
+		OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR,
+		_T("xlsx 파일 (*.xlsx)|*.xlsx"), NULL);
+	if (dlg.DoModal() != IDOK)
+	{
+		return; //다이얼로그 취소 시 다시 모달로 띄울수 있도록 에러 처리
+	}
+	
+	CApplication app;
+	//VARIANT
+	// 엑셀 시작
+	if (!app.CreateDispatch(_T("Excel.Application")))
+	{
+		AfxMessageBox(_T("Couldn't start Excel."));
+	}
+	else
+	{
+		//열리는 과정이 보이게
+		app.put_Visible(FALSE);
+	}
+	app.put_SheetsInNewWorkbook(1);        
+ 
+    CWorkbooks wbs;
+    CWorkbook wb;    
+ 
+    COleVariant covTrue((short)TRUE);
+    COleVariant    covFalse((short)FALSE);
+    COleVariant covOptional((long)DISP_E_PARAMNOTFOUND, VT_ERROR);
+	COleVariant VTrue((short)TRUE, VT_BOOL);
 
+    // books 연결
+    wbs.AttachDispatch(app.get_Workbooks());
+    // book 연결
+    wb.AttachDispatch(wbs.Add(covOptional));    
+ 
+    // sheets 생성, 연결
+    CWorksheets wss;
+    wss = wb.get_Sheets();
+	
+	
+    // sheet 생성, 연결 (1번 시트)
+    CWorksheet ws;
+    ws = wss.get_Item(COleVariant((short)1));
+
+    // sheet 이름 변경
+    ws.put_Name(_T("test sheet 1"));
+
+
+    // range 생성, 연결
+    CRange range;
+    range.AttachDispatch(ws.get_Cells(), true);    
+ 
+	CFont0 font;
+	CBorders border;
+	CString temp;
+	
+	
+	int nValueCount = 0; // 전체 count가 필요함
+
+	while (!m_pRecordset->IsEOF())
+	{
+		for (int i = 0; i < m_VstExcelValue.size(); i++) //필드 갯수 만큼만 반복
+		{
+			nValueCount++; //필드 갯수 * Row 만큼 반복
+		}
+		m_pRecordset->MoveNext();
+	}
+	m_TestProgress.SetRange(0, nValueCount); //프로그래스 바 범위 
+
+	m_pRecordset->MoveFirst();
+
+    // range 값 쓰기
+    for (int i = 1; i <= m_VstExcelValue.size(); i++)
+    {
+        CString strRow;
+        strRow.Format(m_VstExcelValue.at(i-1).strExcelName);
+        range.put_Item(COleVariant((long)1), COleVariant(long(i)), COleVariant(strRow));
+		range.put_VerticalAlignment(COleVariant((short)-4108));
+		range.put_HorizontalAlignment(COleVariant((short)-4108));
+    }
+	int nSetCnt = 0;
+	int nRow = 2;
+	//CString strData;
+	while (!m_pRecordset->IsEOF())
+	{
+		for (int i = 1; i <= m_VstExcelValue.size(); i++)
+		{
+			CString strRow;
+			m_pRecordset->GetFieldValue(short(m_VstExcelValue.at(i-1).nFieldIdcnt), strRow);
+			//ExcelServer.SetCellValue(i + 1, nRow, strData);
+			//strRow.Format(m_VstExcelValue.at(i-1).strExcelName);
+			nSetCnt = nSetCnt + 1;
+			m_TestProgress.SetPos(nSetCnt);
+			range.put_Item(COleVariant((long)nRow), COleVariant(long(i)), COleVariant(strRow));
+		}
+		m_pRecordset->MoveNext();
+		//m_pRecordset->
+		nRow++;
+		SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+	}
+	COleVariant vtOpt((long)DISP_E_PARAMNOTFOUND, VT_ERROR);
+	// 워크북
+
+	range = ws.get_Range(COleVariant(_T("A1")), COleVariant(_T("E1")));
+	range = range.get_EntireColumn();
+	range.AutoFit(); //내용에 맞게 셀 길이 늘리기
+	
+	//색깔
+	range = ws.get_Range(COleVariant(_T("A1")), COleVariant(_T("E1")));
+	
+	font = range.get_Font();
+	font.put_Bold(VTrue);
+	font.put_Color(COleVariant((DOUBLE)RGB(255, 255, 255)));
+	Cnterior FieldColor;
+
+	FieldColor = range.get_Interior();
+	FieldColor.put_Color(COleVariant((DOUBLE)RGB(0, 0, 0)));
+
+	range = ws.get_Range(COleVariant(_T("B1")), COleVariant(_T("C1")));
+	range = range.get_EntireColumn();
+	range.put_HorizontalAlignment(COleVariant((short)-4131));
+
+	range = ws.get_Range(COleVariant(_T("A1")), COleVariant(_T("E1")));
+	range.put_HorizontalAlignment(COleVariant((short)-4108));
+	
+
+	temp.Format(_T("E%d"), nValueCount/5 + 1);
+
+	range = ws.get_Range(COleVariant(_T("A1")), COleVariant(temp));
+	border = range.get_Borders();
+	border.put_LineStyle(COleVariant((short)1));
+
+	CBorder l, t, r, d;
+	l = border.get_Item(7);
+	t = border.get_Item(8);
+	r = border.get_Item(9);
+	d = border.get_Item(10);
+
+	l.put_LineStyle(COleVariant((short)1));
+	l.put_Color(COleVariant((DOUBLE)RGB(255, 0, 0)));
+	l.put_Weight(COleVariant((short)3));
+
+	t.put_LineStyle(COleVariant((short)1));
+	t.put_Color(COleVariant((DOUBLE)RGB(255, 0, 0)));
+	t.put_Weight(COleVariant((short)3));
+
+	r.put_LineStyle(COleVariant((short)1));
+	r.put_Color(COleVariant((DOUBLE)RGB(255, 0, 0)));
+	r.put_Weight(COleVariant((short)3));
+
+	d.put_LineStyle(COleVariant((short)1));
+	d.put_Color(COleVariant((DOUBLE)RGB(255, 0, 0)));
+	d.put_Weight(COleVariant((short)3));
+	//border.put_Color(COleVariant((DOUBLE)RGB(255, 0, 0)));
+	//border.put_Weight(COleVariant((short)3));
+	
+	SetDlgItemText(IDC_SAVE_PROGRESS, _T("파일 저장 완료"));
+
+	//ws.SaveAs(_T("test sheet 1"), vtOpt, vtOpt, vtOpt, vtOpt, vtOpt, vtOpt, vtOpt, vtOpt, vtOpt);
+	wb.SaveAs(COleVariant(dlg.GetPathName()), vtOpt, vtOpt, vtOpt, vtOpt, vtOpt, 0, vtOpt, vtOpt, vtOpt, vtOpt, vtOpt);
+
+	m_TestProgress.SetPos(0); // 프로그래스 바 종료
+
+	m_pRecordset->MoveFirst();
+    // 연결 끊기
+
+	
+    range.ReleaseDispatch();
+    ws.ReleaseDispatch();
+    wss.ReleaseDispatch();
+    wb.ReleaseDispatch();
+    wbs.ReleaseDispatch();
+	app.Quit();
+    app.ReleaseDispatch();
+
+	KillProcess(_T("EXCEL.EXE"));
+}
+
+
+void CMdbToXlDlg::OnBnClickedButton1()
+{
+	/*CFileDialog dlg(false, _T("xlsx"), m_strFileName,
+		OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR,
+		_T("xlsx 파일 (*.xlsx)|*.xlsx"), NULL);
+	if (dlg.DoModal() != IDOK)
+	{
+		return; //다이얼로그 취소 시 다시 모달로 띄울수 있도록 에러 처리
+	}
+
+	vector<FieldINFO> VstExcelValClone = m_VstExcelValue;
+
+	int nRow = 0;
+	int nColumn = 0;
+	CString strData; // CELL에 입력될 값을 받을 변수
+
+	//pMainWnd->m_pExcelServer = new CXLEzAutomation(FALSE);
+	//CXLEzAutomation ExcelServer(FALSE);
+
+	//GetDlgItem(btnFileLoad)->EnableWindow(FALSE);
+	//Excel 파일 관련 변수----------------------------------------------
+	 //엑셀 API함수를 사용하기 위한 변수 선언
+
+	//int length = m_strFileName.GetLength();
+	//char* st = new char[length];
+	//strcpy(st, m_strFileName.GetBuffer(0));
+	CString tempName = dlg.GetFileName();
+
+	CStringA temp1 = CStringA(tempName);
+	const char* cFullAddr1 = temp1;
+	char* cpFullAddr1 = const_cast<char*>(cFullAddr1);
+
+	lxw_workbook* workbook = workbook_new(cpFullAddr1);
+	lxw_worksheet* worksheet = workbook_add_worksheet(workbook, NULL);
+
+	//MDB파일 데이터 배열에 저장하기---------------------------------------------
+	//첫번째 ROW 필드명들만 삽입
+	int nFieldCount = VstExcelValClone.size();
+	for (int i = 0; i < nFieldCount; i++)
+	{
+		CStringA temp = CStringA(VstExcelValClone.at(i).strExcelName);
+		const char* cFullAddr = temp;
+		char* cpFullAddr = const_cast<char*>(cFullAddr);
+		//ExcelServer.SetCellValue(i + 1, 1, pMainWnd->m_VstExcelValue.at(i).strExcelName); //SetCellValue : 셀의 내용 설정 
+		//ExcelServer.SetCellValue(i + 1, 1, VstExcelValClone.at(i).strExcelName); //SetCellValue : 셀의 내용 설정
+		worksheet_write_string(worksheet, i+1, 1, cpFullAddr, NULL);
+	}
+
+	//프로그레스 바 관련 작업 -----------------------------------------------------------
+	int nValueCount = 0; // 전체 count가 필요함
+
+	while (!m_pRecordset->IsEOF())
+	{
+		for (int i = 0; i < nFieldCount; i++) //필드 갯수 만큼만 반복
+		{
+			nValueCount++; //필드 갯수 * Row 만큼 반복
+		}
+		m_pRecordset->MoveNext();
+	}
+	m_ProgressTest2.SetRange(0, nValueCount); //프로그래스 바 범위 
+
+	//-------------------------------------------------------------------------------
+	m_pRecordset->MoveFirst();
+	int nSetCnt = 0; // 프로그래스 바
+	nRow = 2; // 2행부터 출력하기 위해 Row를 2로 잡음(함수 -> 1부터 시작)
+
+	while (!m_pRecordset->IsEOF())
+	{
+		//pMainWnd->SetDlgItemText(IDC_TEST2,i)
+		for (int i = 0; i < nFieldCount; i++)
+		{
+			m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
+			//ExcelServer.SetCellValue(i + 1, nRow, strData);
+			CStringA temp = CStringA(strData);
+			const char* cFullAddr = temp;
+			char* cpFullAddr = const_cast<char*>(cFullAddr);
+
+			worksheet_write_string(worksheet, nRow, i + 1, cpFullAddr, NULL);
+			nSetCnt = nSetCnt + 1;
+			m_ProgressTest2.SetPos(nSetCnt); // 프로그래스 바 진행상황
+		}
+		m_pRecordset->MoveNext();
+		nRow++;
+		SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+	}
+
+	//bool bSaveXL = ExcelServer.SaveFileAs(m_strExcelPathName); //SaveFileAs : 엑셀 파일 저장
+
+	
+	//if (bSaveXL == true)
+	{
+		SetDlgItemText(IDC_SAVE_PROGRESS, _T("파일 저장 완료"));
+		m_ProgressTest2.SetPos(0); // 프로그래스 바 종료
+	}
+	GetDlgItem(btnFileLoad)->EnableWindow(TRUE);
+
+	SetDlgItemText(btnSave, _T("저장하기"));
+	m_pRecordset->MoveFirst();
+
+	
+	workbook_close(workbook);*/
+
+	CFileDialog dlg(false, _T("xlsx"), m_strFileName,
+		OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR,
+		_T("xlsx 파일 (*.xlsx)|*.xlsx"), NULL);
+	if (dlg.DoModal() != IDOK)
+	{
+		return; //다이얼로그 취소 시 다시 모달로 띄울수 있도록 에러 처리
+	}
+
+
+	vector<FieldINFO> VstExcelValClone = m_VstExcelValue;
+
+	CString tempName = dlg.GetFileName();
+
+	CStringA temp1 = CStringA(tempName);
+	const char* cFullAddr1 = temp1;
+	char* cpFullAddr1 = const_cast<char*>(cFullAddr1);
+
+
+	lxw_workbook* workbook = workbook_new(cpFullAddr1);
+	lxw_worksheet* worksheet = workbook_add_worksheet(workbook, NULL);
+
+	int nFieldCount = VstExcelValClone.size();
+	for (int i = 0; i < nFieldCount; i++)
+	{
+		CStringA temp = CStringA(VstExcelValClone.at(i).strExcelName);
+		const char* cFullAddr = temp;
+		char* cpFullAddr = const_cast<char*>(cFullAddr);
+		//ExcelServer.SetCellValue(i + 1, 1, pMainWnd->m_VstExcelValue.at(i).strExcelName); //SetCellValue : 셀의 내용 설정 
+		//ExcelServer.SetCellValue(i + 1, 1, VstExcelValClone.at(i).strExcelName); //SetCellValue : 셀의 내용 설정
+		worksheet_write_string(worksheet, 0, i, cpFullAddr, NULL);
+	}
+
+	int nValueCount = 0; // 전체 count가 필요함
+
+	while (!m_pRecordset->IsEOF())
+	{
+		for (int i = 0; i < nFieldCount; i++) //필드 갯수 만큼만 반복
+		{
+			nValueCount++; //필드 갯수 * Row 만큼 반복
+		}
+		m_pRecordset->MoveNext();
+	}
+	m_ProgressTest2.SetRange(0, nValueCount); //프로그래스 바 범위 
+
+	int nRow;
+	CString strData;
+	m_pRecordset->MoveFirst();
+	int nSetCnt = 0; // 프로그래스 바
+	nRow = 1; // 2행부터 출력하기 위해 Row를 2로 잡음(함수 -> 1부터 시작)
+
+	while (!m_pRecordset->IsEOF())
+	{
+		
+		for (int i = 0; i < nFieldCount; i++)
+		{
+			m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
+			CStringA temp = CStringA(strData);
+			const char* cFullAddr = temp;
+			char* cpFullAddr = const_cast<char*>(cFullAddr);
+
+			worksheet_write_string(worksheet, nRow, i+1, cpFullAddr, NULL);
+			nSetCnt = nSetCnt + 1;
+			m_ProgressTest2.SetPos(nSetCnt); // 프로그래스 바 진행상황
+		}
+		m_pRecordset->MoveNext();
+		nRow++;
+		SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+	}
+	workbook_close(workbook);
 }

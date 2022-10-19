@@ -9,7 +9,7 @@
 #include <afxdb.h>
 #include "CPictureEX.h"
 #include <TlHelp32.h>
-//#include "EasyRunExcel.h"
+#include "EasyRunExcel.h"
 
 #pragma once
 using namespace std;
@@ -117,14 +117,9 @@ public:
 	// 로고 관련
 	CPictureEx m_ctrlROGO;
 
-
-	///////////////////////임시변수
-	CStatic TEST;
-	CString m_strEdit2;
-	CString m_strEdit3;
-	CString m_strEdit4;
-	CString m_strEdit5;
-
 	afx_msg void OnBnClickedbtnexcelsave();
+	CProgressCtrl m_TestProgress;
+	afx_msg void OnBnClickedButton1();
+	CProgressCtrl m_ProgressTest2;
 };
 
