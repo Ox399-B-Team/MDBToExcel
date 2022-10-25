@@ -9,9 +9,12 @@
 #include <afxdb.h>
 #include "CPictureEX.h"
 #include <TlHelp32.h>
+#include "xlsxwriter.h"
+//#include "pch.h"
 
 #pragma once
 using namespace std;
+
 class CMdbToXlDlgAutoProxy;
 
 typedef struct FieldINFO
@@ -98,6 +101,8 @@ public:
 	CFileDialog* m_pExcelDlg;		// excel 다이얼로그 포인터 변수
 	CString m_strExcelPathName;
 	HANDLE m_hExcelThread;
+	int m_nTotalRecordCount;
+	int CalcTotalRow(CString strTableName, CDatabase* db);
 
 	//-----------------------------------
 	// GUI 관련
@@ -116,6 +121,9 @@ public:
 	// 로고 관련
 	CPictureEx m_ctrlROGO;
 
+	//--------------------------------------
+	// 테스트 관련
+	afx_msg void OnBnClickedDatasaveXjem();
 	CStatic TEST;
 };
 

@@ -40,7 +40,6 @@ const GUID CDECL BASED_CODE _tlid =
 const WORD _wVerMajor = 1;
 const WORD _wVerMinor = 0;
 
-
 // CMdbToXlApp 초기화
 
 BOOL CMdbToXlApp::InitInstance()
