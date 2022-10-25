@@ -782,8 +782,8 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 	WideCharToMultiByte(CP_UTF8, 0, strUnicode, -1, strMultibyte, len, NULL, NULL);
 
 	lxw_workbook* workbook = workbook_new(strMultibyte); // 안시
-	lxw_worksheet* worksheet = workbook_add_worksheet(workbook, NULL);
-	worksheet_set_vba_name(worksheet, "asd");
+	lxw_worksheet* worksheet = workbook_add_worksheet(workbook, "asd");
+	//worksheet_set_vba_name(worksheet, "asd");
 
 	int nFieldCount = VstExcelValClone.size();
 
@@ -793,6 +793,8 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 		const char* cFullAddr = temp;
 		char* cpFullAddr = const_cast<char*>(cFullAddr);
 
+		worksheet_set_column(worksheet, 0, i, 15, NULL);
+		worksheet_set_column(worksheet, 2, 2, 40, NULL);
 		if (pMainWnd->m_strTable == _T("SV_DVVAL"))
 		{
 			lxw_format* format = workbook_add_format(workbook);
@@ -804,7 +806,12 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 
 			format_set_align(format, LXW_ALIGN_CENTER);
 			format_set_align(format, LXW_ALIGN_VERTICAL_CENTER);
+
 			worksheet_write_string(worksheet, 0, i, cpFullAddr, format);
+
+			lxw_format* outrange_format = workbook_add_format(workbook);
+			format_set_bg_color(outrange_format, LXW_COLOR_GRAY);
+			worksheet_set_column(worksheet, 5, 100, LXW_DEF_COL_WIDTH, outrange_format);
 		}
 		else
 		{
@@ -834,14 +841,52 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 		{
 			pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
 
+			//// strData를 char로 바꾸는 작업
+			//CStringA temp = CStringA(strData);
+			//const char* cFullAddr = temp;
+			//char* cpFullAddr = const_cast<char*>(cFullAddr);
+			//
+			////들어온 정보가 숫자인지 아닌지 판별 // 0이면 문자열 // 0이 아니면 숫자
+			////TRUE면 숫자 / FALSE면 문자열
+			//bool isStringNumber = TRUE;
+			//for (int i = 0; i < strlen(cpFullAddr); i++) {
+			//	if (isdigit(cpFullAddr[i]) == 0) {
+			//		isStringNumber = FALSE;
+			//	}
+			//}
+			lxw_format* format = workbook_add_format(workbook);
+			format_set_text_wrap(format);
+			format_set_align(format, LXW_ALIGN_CENTER);
+			format_set_align(format, LXW_ALIGN_VERTICAL_CENTER);
+
 			wcscpy_s(strUnicode, 256, strData);
 			int len = WideCharToMultiByte(CP_UTF8, 0, strUnicode, -1, NULL, 0, NULL, NULL);
 			WideCharToMultiByte(CP_UTF8, 0, strUnicode, -1, strMultibyte, len, NULL, NULL);
 
-			worksheet_write_string(worksheet, nRow, i, strMultibyte, NULL); // 안시
+			/*if (isStringNumber)
+			{
+				int ConvertINT = atoi(strMultibyte);
+				worksheet_write_number(worksheet, nRow, i, ConvertINT, NULL);
+			}
+			else
+			{*/
+			if (i == 1 || i == 2)
+			{
+				lxw_format* formatLeft = workbook_add_format(workbook);
+				format_set_text_wrap(formatLeft);
+				format_set_align(formatLeft, LXW_ALIGN_VERTICAL_CENTER);
+				worksheet_write_string(worksheet, nRow, i, strMultibyte, formatLeft); // 안시
+			}
+			else
+			{
+				worksheet_write_string(worksheet, nRow, i, strMultibyte, format);
+			}
+				
+			//}
 			nSetCnt = nSetCnt + 1;
 			pMainWnd->m_ctrlProgress.SetPos(nSetCnt); // 프로그래스 바 진행상황
 		}
+		
 		pMainWnd->m_pRecordset->MoveNext();
 		nRow++;
 		pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
@@ -850,6 +895,9 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 	lxw_format* format = workbook_add_format(workbook);
 	format_set_border(format, LXW_BORDER_THICK);
 	
+	//sheet 색
+	worksheet_set_tab_color(worksheet, LXW_COLOR_GREEN);
+
 	workbook_close(workbook);
 	pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("저장 완료"));
 

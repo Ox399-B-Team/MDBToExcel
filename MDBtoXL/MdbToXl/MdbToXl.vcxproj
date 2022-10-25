@@ -93,12 +93,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Users\BIT\Desktop\GIT Sub\MDBtoXL\MdbToXl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\BIT\Desktop\gitsub\MDBtoXL\MdbToXl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <RegisterOutput>true</RegisterOutput>
-      <AdditionalLibraryDirectories>C:\Users\BIT\Desktop\GIT Sub\MDBtoXL\MdbToXl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\BIT\Desktop\gitsub\MDBtoXL\MdbToXl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>xlsxwriter.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Midl>
