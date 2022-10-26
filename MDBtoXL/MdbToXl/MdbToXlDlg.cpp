@@ -815,7 +815,15 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 				const char* cFullAddr = temp;
 				char* cpFullAddr = const_cast<char*>(cFullAddr);
 
+				for (int i = 0; i <= 6; i++)
+				{
+					worksheet_set_column(pWorksheet[i], 0, i, 15, NULL);
+					worksheet_set_column(pWorksheet[i], 2, 2, 40, NULL);
+					worksheet_set_column(pWorksheet[i], 1, 1, 30, NULL);
+				}
+				
 				lxw_format* format = workbook_add_format(workbook);
+
 				format_set_bold(format);
 				format_set_font_color(format, LXW_COLOR_WHITE); // 폰트 흰색
 
@@ -845,13 +853,21 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 	{
 		pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(0).nFieldIdcnt), strData);
 		int nData = _ttoi(strData);
-		//pMainWnd->m_pRecordset->ClearFieldStatus();
+
+		lxw_format* format = workbook_add_format(workbook);
+		format_set_text_wrap(format);
+		format_set_align(format, LXW_ALIGN_VERTICAL_CENTER);
+		format_set_align(format, LXW_ALIGN_CENTER);
+
+		lxw_format* LAlignFormat = workbook_add_format(workbook);
+		format_set_text_wrap(LAlignFormat);
+		format_set_align(LAlignFormat, LXW_ALIGN_VERTICAL_CENTER);
 		if (nData < 100000)
 		{
 			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-			worksheet_write_string(pWorksheet[0], nFASRow, 0, strMultibyte, NULL); // 안시
+			worksheet_write_string(pWorksheet[0], nFASRow, 0, strMultibyte, format); // 안시
 
 			for (int i = 1; i < nFieldCount; i++)
 			{
@@ -861,7 +877,11 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-				worksheet_write_string(pWorksheet[0], nFASRow, i, strMultibyte, NULL); // 안시
+				if (i == 1 || i == 2)
+					worksheet_write_string(pWorksheet[0], nFASRow, i, strMultibyte, LAlignFormat);
+				else
+					worksheet_write_string(pWorksheet[0], nFASRow, i, strMultibyte, format); // 안시
+				
 				nTotalCount++;
 				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
 			}
@@ -874,7 +894,7 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-			worksheet_write_string(pWorksheet[1], nSCHRow, 0, strMultibyte, NULL); // 안시
+			worksheet_write_string(pWorksheet[1], nSCHRow, 0, strMultibyte, format); // 안시
 
 			for (int i = 1; i < nFieldCount; i++)
 			{
@@ -884,7 +904,10 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-				worksheet_write_string(pWorksheet[1], nSCHRow, i, strMultibyte, NULL); // 안시
+				if (i == 1 || i == 2)
+					worksheet_write_string(pWorksheet[1], nSCHRow, i, strMultibyte, LAlignFormat);
+				else
+					worksheet_write_string(pWorksheet[1], nSCHRow, i, strMultibyte, format); // 안시
 				nTotalCount++;
 				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
 			}
@@ -897,7 +920,7 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-			worksheet_write_string(pWorksheet[2], nTMCRow, 0, strMultibyte, NULL); // 안시
+			worksheet_write_string(pWorksheet[2], nTMCRow, 0, strMultibyte, format); // 안시
 
 			for (int i = 1; i < nFieldCount; i++)
 			{
@@ -907,7 +930,10 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-				worksheet_write_string(pWorksheet[2], nTMCRow, i, strMultibyte, NULL); // 안시
+				if (i == 1 || i == 2)
+					worksheet_write_string(pWorksheet[2], nTMCRow, i, strMultibyte, LAlignFormat);
+				else
+					worksheet_write_string(pWorksheet[2], nTMCRow, i, strMultibyte, format); // 안시
 				nTotalCount++;
 				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
 			}
@@ -920,7 +946,7 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-			worksheet_write_string(pWorksheet[3], nPMC1Row, 0, strMultibyte, NULL); // 안시
+			worksheet_write_string(pWorksheet[3], nPMC1Row, 0, strMultibyte, format); // 안시
 
 			for (int i = 1; i < nFieldCount; i++)
 			{
@@ -930,7 +956,10 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-				worksheet_write_string(pWorksheet[3], nPMC1Row, i, strMultibyte, NULL); // 안시
+				if (i == 1 || i == 2)
+					worksheet_write_string(pWorksheet[3], nPMC1Row, i, strMultibyte, LAlignFormat);
+				else
+					worksheet_write_string(pWorksheet[3], nPMC1Row, i, strMultibyte, format); // 안시
 				nTotalCount++;
 				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
 			}
@@ -943,7 +972,7 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-			worksheet_write_string(pWorksheet[4], nPMC2Row, 0, strMultibyte, NULL); // 안시
+			worksheet_write_string(pWorksheet[4], nPMC2Row, 0, strMultibyte, format); // 안시
 
 			for (int i = 1; i < nFieldCount; i++)
 			{
@@ -953,7 +982,10 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-				worksheet_write_string(pWorksheet[4], nPMC2Row, i, strMultibyte, NULL); // 안시
+				if (i == 1 || i == 2)
+					worksheet_write_string(pWorksheet[4], nPMC2Row, i, strMultibyte, LAlignFormat);
+				else
+					worksheet_write_string(pWorksheet[4], nPMC2Row, i, strMultibyte, format); // 안시
 				nTotalCount++;
 				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
 			}
@@ -966,7 +998,7 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-			worksheet_write_string(pWorksheet[5], nPMC3Row, 0, strMultibyte, NULL); // 안시
+			worksheet_write_string(pWorksheet[5], nPMC3Row, 0, strMultibyte, format); // 안시
 
 			for (int i = 1; i < nFieldCount; i++)
 			{
@@ -976,7 +1008,10 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-				worksheet_write_string(pWorksheet[5], nPMC3Row, i, strMultibyte, NULL); // 안시
+				if (i == 1 || i == 2)
+					worksheet_write_string(pWorksheet[5], nPMC3Row, i, strMultibyte, LAlignFormat);
+				else
+					worksheet_write_string(pWorksheet[5], nPMC3Row, i, strMultibyte, format); // 안시
 				nTotalCount++;
 				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
 			}
@@ -989,7 +1024,7 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-			worksheet_write_string(pWorksheet[6], nPMC4Row, 0, strMultibyte, NULL); // 안시
+			worksheet_write_string(pWorksheet[6], nPMC4Row, 0, strMultibyte, format); // 안시
 
 			for (int i = 1; i < nFieldCount; i++)
 			{
@@ -999,7 +1034,10 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
 				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
 
-				worksheet_write_string(pWorksheet[6], nPMC4Row, i, strMultibyte, NULL); // 안시
+				if (i == 1 || i == 2)
+					worksheet_write_string(pWorksheet[6], nPMC4Row, i, strMultibyte, LAlignFormat);
+				else
+					worksheet_write_string(pWorksheet[6], nPMC4Row, i, strMultibyte, format); // 안시
 				nTotalCount++;
 				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
 			}
@@ -1015,7 +1053,13 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 	{
 		worksheet_set_column(pWorksheet[i], 5, 300, LXW_DEF_COL_WIDTH, outrange_format);
 	}
-	
+	worksheet_set_tab_color(pWorksheet[0], LXW_COLOR_RED);
+	worksheet_set_tab_color(pWorksheet[1], LXW_COLOR_ORANGE);
+	worksheet_set_tab_color(pWorksheet[2], LXW_COLOR_YELLOW);
+	worksheet_set_tab_color(pWorksheet[3], LXW_COLOR_GREEN);
+	worksheet_set_tab_color(pWorksheet[4], LXW_COLOR_BLUE);
+	worksheet_set_tab_color(pWorksheet[5], LXW_COLOR_NAVY);
+	worksheet_set_tab_color(pWorksheet[6], LXW_COLOR_PURPLE);
 	//테두리   
 	lxw_format* format = workbook_add_format(workbook);
 	format_set_border(format, LXW_BORDER_THICK);
