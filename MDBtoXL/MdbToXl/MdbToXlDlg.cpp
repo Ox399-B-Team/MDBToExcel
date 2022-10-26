@@ -770,10 +770,13 @@ void CMdbToXlDlg::OnBnClickedbtnsave()
 DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 {
 	CMdbToXlDlg* pMainWnd = (CMdbToXlDlg*)p;
-	
+
 	vector<FieldINFO> VstExcelValClone = pMainWnd->m_VstExcelValue;
 
 	CString tempPame = pMainWnd->m_strExcelPathName;
+	CString strData = _T("");
+	int nFieldCount = VstExcelValClone.size();
+	int nTotalCount = 0;
 
 	wchar_t strUnicode[256] = { 0, };
 	char   strMultibyte[256] = { 0, };
@@ -782,154 +785,245 @@ DWORD WINAPI XJemtoExcelWorkThread(LPVOID p)
 	WideCharToMultiByte(CP_UTF8, 0, strUnicode, -1, strMultibyte, len, NULL, NULL);
 
 	lxw_workbook* workbook = workbook_new(strMultibyte); // 안시
-	lxw_worksheet* worksheet = workbook_add_worksheet(workbook, "asd");
-	//worksheet_set_vba_name(worksheet, "asd");
+	pMainWnd->m_ctrlProgress.SetRange(0, pMainWnd->m_nTotalRecordCount); //프로그래스 바 범위
+	int nRow = 0;
+	//필요 시트 생성 : 7개
+	lxw_worksheet* pWorksheet[7] = {
+							workbook_add_worksheet(workbook, "FAS"),
+							workbook_add_worksheet(workbook, "SCH"),
+							workbook_add_worksheet(workbook, "TMC"),
+							workbook_add_worksheet(workbook, "PMC1"),
+							workbook_add_worksheet(workbook, "PMC2"),
+							workbook_add_worksheet(workbook, "PMC3"),
+							workbook_add_worksheet(workbook, "PMC4"),
+	};
+	int nFASRow = 0;
+	int nSCHRow = 0;
+	int nTMCRow = 0;
+	int nPMC1Row = 0;
+	int nPMC2Row = 0;
+	int nPMC3Row = 0;
+	int nPMC4Row = 0;
 
-	int nFieldCount = VstExcelValClone.size();
-
-	for (int i = 0; i < nFieldCount; i++)
+	if (pMainWnd->m_strTable == _T("SV_DVVAL"))
 	{
-		CStringA temp = CStringA(VstExcelValClone.at(i).strExcelName);
-		const char* cFullAddr = temp;
-		char* cpFullAddr = const_cast<char*>(cFullAddr);
-
-		worksheet_set_column(worksheet, 0, i, 15, NULL);
-		worksheet_set_column(worksheet, 2, 2, 40, NULL);
-		if (pMainWnd->m_strTable == _T("SV_DVVAL"))
+		for (int i = 0; i < sizeof(pWorksheet) / 8; i++)
 		{
-			lxw_format* format = workbook_add_format(workbook);
-			format_set_bold(format);
-			format_set_font_color(format, LXW_COLOR_WHITE); // 폰트 흰색
+			for (int j = 0; j < nFieldCount; j++)
+			{
+				CStringA temp = CStringA(VstExcelValClone.at(j).strExcelName);
+				const char* cFullAddr = temp;
+				char* cpFullAddr = const_cast<char*>(cFullAddr);
 
-			format_set_pattern(format, LXW_PATTERN_SOLID);
-			format_set_bg_color(format, LXW_COLOR_BLACK); // 셀 색상 검은색
+				lxw_format* format = workbook_add_format(workbook);
+				format_set_bold(format);
+				format_set_font_color(format, LXW_COLOR_WHITE); // 폰트 흰색
 
-			format_set_align(format, LXW_ALIGN_CENTER);
-			format_set_align(format, LXW_ALIGN_VERTICAL_CENTER);
-			
-			format_set_border(format, LXW_BORDER_DOTTED);
+				format_set_pattern(format, LXW_PATTERN_SOLID);
+				format_set_bg_color(format, LXW_COLOR_BLACK); // 셀 색상 검은색
 
-			worksheet_write_string(worksheet, 0, i, cpFullAddr, format);
-
-			lxw_format* outrange_format = workbook_add_format(workbook);
-			format_set_bg_color(outrange_format, LXW_COLOR_GRAY);
-			worksheet_set_column(worksheet, 5, 100, LXW_DEF_COL_WIDTH, outrange_format);
+				format_set_align(format, LXW_ALIGN_CENTER);
+				format_set_align(format, LXW_ALIGN_VERTICAL_CENTER);
+				worksheet_write_string(pWorksheet[i], nRow, j, cpFullAddr, format);
+			}
 		}
-		else
-		{
-			return 0;
-		}
+		nFASRow++;
+		nSCHRow++;
+		nTMCRow++;
+		nPMC1Row++;
+		nPMC2Row++;
+		nPMC3Row++;
+		nPMC4Row++;
 	}
-	int nValueCount = 0; // 전체 count가 필요함
+	else
+	{
+		AfxMessageBox(_T("SV_DVVAL테이블이 존재하지 않습니다."));
+		return 0;
+	}
 
 	while (!pMainWnd->m_pRecordset->IsEOF())
 	{
-		for (int i = 0; i < nFieldCount; i++) //필드 갯수 만큼만 반복
+		pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(0).nFieldIdcnt), strData);
+		int nData = _ttoi(strData);
+		//pMainWnd->m_pRecordset->ClearFieldStatus();
+		if (nData < 100000)
 		{
-			nValueCount++; //필드 갯수 * Row 만큼 반복
+			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+			worksheet_write_string(pWorksheet[0], nFASRow, 0, strMultibyte, NULL); // 안시
+
+			for (int i = 1; i < nFieldCount; i++)
+			{
+				pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
+
+				//wcscpy_s(strUnicode, 128, strData);
+				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+				worksheet_write_string(pWorksheet[0], nFASRow, i, strMultibyte, NULL); // 안시
+				nTotalCount++;
+				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
+			}
+			pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+			pMainWnd->m_pRecordset->MoveNext();
+			nFASRow++;
 		}
-		pMainWnd->m_pRecordset->MoveNext();
+		else if (nData < 200000)
+		{
+			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+			worksheet_write_string(pWorksheet[1], nSCHRow, 0, strMultibyte, NULL); // 안시
+
+			for (int i = 1; i < nFieldCount; i++)
+			{
+				pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
+
+				//wcscpy_s(strUnicode, 128, strData);
+				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+				worksheet_write_string(pWorksheet[1], nSCHRow, i, strMultibyte, NULL); // 안시
+				nTotalCount++;
+				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
+			}
+			pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+			pMainWnd->m_pRecordset->MoveNext();
+			nSCHRow++;
+		}
+		else if (nData < 300000)
+		{
+			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+			worksheet_write_string(pWorksheet[2], nTMCRow, 0, strMultibyte, NULL); // 안시
+
+			for (int i = 1; i < nFieldCount; i++)
+			{
+				pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
+
+				//wcscpy_s(strUnicode, 128, strData);
+				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+				worksheet_write_string(pWorksheet[2], nTMCRow, i, strMultibyte, NULL); // 안시
+				nTotalCount++;
+				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
+			}
+			pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+			pMainWnd->m_pRecordset->MoveNext();
+			nTMCRow++;
+		}
+		else if (_ttoi(VstExcelValClone.at(0).strExcelName) < 2000000)
+		{
+			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+			worksheet_write_string(pWorksheet[3], nPMC1Row, 0, strMultibyte, NULL); // 안시
+
+			for (int i = 1; i < nFieldCount; i++)
+			{
+				pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
+
+				//wcscpy_s(strUnicode, 128, strData);
+				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+				worksheet_write_string(pWorksheet[3], nPMC1Row, i, strMultibyte, NULL); // 안시
+				nTotalCount++;
+				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
+			}
+			pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+			pMainWnd->m_pRecordset->MoveNext();
+			nPMC1Row++;
+		}
+		else if (_ttoi(VstExcelValClone.at(0).strExcelName) < 3000000)
+		{
+			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+			worksheet_write_string(pWorksheet[4], nPMC2Row, 0, strMultibyte, NULL); // 안시
+
+			for (int i = 1; i < nFieldCount; i++)
+			{
+				pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
+
+				//wcscpy_s(strUnicode, 128, strData);
+				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+				worksheet_write_string(pWorksheet[4], nPMC2Row, i, strMultibyte, NULL); // 안시
+				nTotalCount++;
+				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
+			}
+			pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+			pMainWnd->m_pRecordset->MoveNext();
+			nPMC2Row++;
+		}
+		else if (_ttoi(VstExcelValClone.at(0).strExcelName) < 4000000)
+		{
+			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+			worksheet_write_string(pWorksheet[5], nPMC3Row, 0, strMultibyte, NULL); // 안시
+
+			for (int i = 1; i < nFieldCount; i++)
+			{
+				pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
+
+				//wcscpy_s(strUnicode, 128, strData);
+				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+				worksheet_write_string(pWorksheet[5], nPMC3Row, i, strMultibyte, NULL); // 안시
+				nTotalCount++;
+				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
+			}
+			pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+			pMainWnd->m_pRecordset->MoveNext();
+			nPMC3Row++;
+		}
+		else if (_ttoi(VstExcelValClone.at(0).strExcelName) < 5000000)
+		{
+			int len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+			WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+			worksheet_write_string(pWorksheet[6], nPMC4Row, 0, strMultibyte, NULL); // 안시
+
+			for (int i = 1; i < nFieldCount; i++)
+			{
+				pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
+
+				//wcscpy_s(strUnicode, 128, strData);
+				len = WideCharToMultiByte(CP_UTF8, 0, strData, -1, NULL, 0, NULL, NULL);
+				WideCharToMultiByte(CP_UTF8, 0, strData, -1, strMultibyte, len, NULL, NULL);
+
+				worksheet_write_string(pWorksheet[6], nPMC4Row, i, strMultibyte, NULL); // 안시
+				nTotalCount++;
+				pMainWnd->m_ctrlProgress.SetPos(nTotalCount); // 프로그래스 바 진행상황                        
+			}
+			pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+			pMainWnd->m_pRecordset->MoveNext();
+			nPMC4Row++;
+		}
 	}
-	pMainWnd->m_ctrlProgress.SetRange(0, nValueCount); //프로그래스 바 범위 
-
-	CString strData = _T("");
-	pMainWnd->m_pRecordset->MoveFirst();
-	int nSetCnt = 0; // 프로그래스 바
-	int nRow = 1; // 2행부터 출력하기 위해 Row를 2로 잡음(함수 -> 1부터 시작)
-
-	while (!pMainWnd->m_pRecordset->IsEOF())
+	lxw_format* outrange_format = workbook_add_format(workbook);
+	format_set_pattern(outrange_format, LXW_PATTERN_SOLID);
+	format_set_bg_color(outrange_format, LXW_COLOR_GRAY);
+	for (int i = 0; i <= 6; i++)
 	{
-		for (int i = 0; i < nFieldCount; i++)
-		{
-			pMainWnd->m_pRecordset->GetFieldValue(short(VstExcelValClone.at(i).nFieldIdcnt), strData);
-
-			////CString을 char로 바꿈
-			//CStringA temp = CStringA(strData);
-			//const char* cFullAddr = temp;
-			//char* cpFullAddr = const_cast<char*>(cFullAddr);
-			//
-			////숫자인지 문자열인지 판별 // 0이면 문자, 아니면 숫자 // FALSE면 문자, TRUE면 숫자
-			////
-			//BOOL isStringNumber = FALSE;
-			//for (int i = 0; i < strlen(cpFullAddr); i++) {
-			//	if (isdigit(cpFullAddr[i]) != 0) {
-			//		isStringNumber = TRUE;
-			//		break;
-			//	}
-			//}
-
-			lxw_format* format = workbook_add_format(workbook);
-			format_set_text_wrap(format);
-			format_set_align(format, LXW_ALIGN_CENTER);
-			format_set_align(format, LXW_ALIGN_VERTICAL_CENTER);
-
-			wcscpy_s(strUnicode, 256, strData);
-			int len = WideCharToMultiByte(CP_UTF8, 0, strUnicode, -1, NULL, 0, NULL, NULL);
-			WideCharToMultiByte(CP_UTF8, 0, strUnicode, -1, strMultibyte, len, NULL, NULL);
-
-			//DOUBLE nNum = 0;
-			//nNum = _wtof(strData);
-			//if (isStringNumber)
-			//{
-			//	if (i == 1 || i == 2)
-			//	{
-			//		lxw_format* formatLeft = workbook_add_format(workbook);
-			//		format_set_text_wrap(formatLeft);
-			//		format_set_align(formatLeft, LXW_ALIGN_VERTICAL_CENTER);
-
-			//		format_set_border(formatLeft, LXW_BORDER_THICK);
-			//		format_set_bottom_color(formatLeft, LXW_COLOR_BLUE);
-			//		format_set_right_color(formatLeft, LXW_COLOR_BLUE);
-
-			//		worksheet_write_number(worksheet, nRow, i, nNum, formatLeft); // 안시
-			//	}
-			//	else
-			//	{
-			//		worksheet_write_number(worksheet, nRow, i, nNum, format);
-			//	}
-			//}
-			//else
-			//{
-			//텍스트 설정
-			lxw_format* InnerBorder = workbook_add_format(workbook);
-			format_set_text_wrap(InnerBorder);
-			format_set_align(InnerBorder, LXW_ALIGN_VERTICAL_CENTER);
-
-			//테두리 설정하는 곳
-			format_set_border(InnerBorder, LXW_BORDER_DOTTED);
-			/*format_set_bottom_color(formatLeft, LXW_COLOR_BLUE);
-			format_set_right_color(formatLeft, LXW_COLOR_BLUE);
-			format_set_left_color(formatLeft, LXW_COLOR_BLUE);*/
-				if (i == 1 || i == 2)
-				{
-					worksheet_write_string(worksheet, nRow, i, strMultibyte, InnerBorder); // 안시
-				}
-				else
-				{
-					worksheet_write_string(worksheet, nRow, i, strMultibyte, InnerBorder);
-				}
-			//}
-			
-			nSetCnt = nSetCnt + 1;
-			pMainWnd->m_ctrlProgress.SetPos(nSetCnt); // 프로그래스 바 진행상황
-		}
-
-		lxw_format* OutBorder = workbook_add_format(workbook);
-		format_set_border(OutBorder, LXW_BORDER_THICK);
-		format_set_left_color(OutBorder, LXW_COLOR_BLUE);
-		worksheet_set_column(worksheet,0,0,15,OutBorder);
-		
-		pMainWnd->m_pRecordset->MoveNext();
-		nRow++;
-		pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("데이터 변환 중..."));
+		worksheet_set_column(pWorksheet[i], 5, 300, LXW_DEF_COL_WIDTH, outrange_format);
 	}
-	//sheet 색
-	worksheet_set_tab_color(worksheet, LXW_COLOR_GREEN);
-
+	
+	//테두리   
+	lxw_format* format = workbook_add_format(workbook);
+	format_set_border(format, LXW_BORDER_THICK);
 	workbook_close(workbook);
 	pMainWnd->SetDlgItemText(IDC_SAVE_PROGRESS, _T("저장 완료"));
 
 	return 0;
+
 }
 
 void CMdbToXlDlg::OnBnClickedDatasaveXjem()
