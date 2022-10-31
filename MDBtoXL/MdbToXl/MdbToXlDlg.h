@@ -103,6 +103,7 @@ public:
 	HANDLE m_hExcelThread;
 	int m_nTotalRecordCount;
 	int CalcTotalRow(CString strTableName, CDatabase* db);
+	BOOL m_bSpecial;
 
 	//-----------------------------------
 	// GUI 관련
